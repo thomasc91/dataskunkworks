@@ -9,7 +9,7 @@
     "base_url": "https://thomasc91.github.io/dataskunkworks/",
     "description": "Interactive data visualisations by Thomas Colin, each with a short note on how it was made and a link to its code.",
     "headline": "Experiments with data.",
-    "lede": "I'm a data scientist in Brisbane, not an engineer. Each piece has a short note on how I built it with AI and a link to the code, so you can make your own.",
+    "lede": "Each project below has a short note on how I built it and a link to the code, so you can make your own.",
     "about": [
       "I'm Thomas Colin, a data scientist in Brisbane. I've spent my career turning data into things people remember, most recently at Atlassian.",
       "Data Skunkworks is where the experiments live: each piece starts with a question and ends with something you can poke at. Lately most of them are built with AI, with me choosing the question, the data and how it should feel.",
