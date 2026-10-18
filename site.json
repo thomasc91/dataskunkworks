@@ -79,6 +79,71 @@
       ]
     },
     {
+      "slug": "london-pixel-diorama",
+      "title": "London pixel diorama",
+      "year": 2026,
+      "kicker": [
+        "three.js",
+        "WebGL",
+        "Open map data"
+      ],
+      "badge": "3D",
+      "summary": "A 3D pixel-art model of central London, with its landmarks built by hand, that you can fly around.",
+      "standfirst": "Every building within 5 km of the South Bank, from the City towers to the terraces of Kennington, with Big Ben, the Shard, Tower Bridge and ten more landmarks modelled to their real shapes.",
+      "entry": "projects/london-pixel-diorama/",
+      "code": "projects/london-pixel-diorama",
+      "thumb": "thumbs/london-pixel-diorama.jpg",
+      "load_note": "Loads 20 MB of map data",
+      "capture": {
+        "wait": 18000,
+        "query": "?cx=-219&cz=574&span=760&az=262&el=14",
+        "hide": "header, .toolbar, #hint, footer, #card"
+      },
+      "facts": [
+        [
+          "Data",
+          "OpenStreetMap and Overture Maps"
+        ],
+        [
+          "Scale",
+          "91,694 buildings, 86,430 trees and 13 hand-built landmarks in a 5 km circle"
+        ],
+        [
+          "Built with",
+          "three.js r170 and WebGL, with Claude"
+        ]
+      ],
+      "writeup": [
+        {
+          "h": "What you're looking at",
+          "p": [
+            "Drag to orbit, scroll to zoom, and hover or click a building to see its height and floors. The sun slider moves the shadows across an October day in London, and the skyline view frames the towers of the City.",
+            "The cars, buses, Thames ferries and planes are simulated, not live. Buildings are drawn 1.6 times taller than they really are, so the skyline still reads from a distance."
+          ]
+        },
+        {
+          "h": "The landmarks",
+          "p": [
+            "Thirteen landmarks are hand-built models placed on their real footprints: Elizabeth Tower and Victoria Tower, Westminster Abbey, the London Eye, St Paul's Cathedral, the Shard, Tower Bridge, the White Tower, the Gherkin, the Walkie-Talkie, the Cheesegrater, the BT Tower and Battersea Power Station.",
+            "Their shapes and sizes follow published dimensions. The London Eye is scaled evenly so its wheel stays round, and St Paul's dome keeps its real proportions."
+          ]
+        },
+        {
+          "h": "How it was made",
+          "p": [
+            "It uses the renderer from the Brisbane pixel diorama with a new pipeline that can build any city from open map data: Overture Maps for the buildings and their heights, and OpenStreetMap for the river, parks, trees, roads, bridges and ferries. Where a building has no mapped height, it's estimated from its neighbours or its type, and its card says so.",
+            "It was built with Claude in October 2026."
+          ]
+        },
+        {
+          "h": "The data",
+          "p": [
+            "Buildings, streets and parks are © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation. The model file is 20 MB, so give it a few seconds on a phone."
+          ]
+        }
+      ]
+    },
+    {
       "slug": "dance-of-the-dragons",
       "title": "The Dying of the Dragons",
       "year": 2026,
