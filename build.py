@@ -12,10 +12,10 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-FONTS = ('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;'
-         '0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap')
+FONTS = ('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Jersey+15'
+         '&family=Space+Mono:wght@400;700&display=swap')
 FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' "
-           "rx='6' fill='%23131210'/%3E%3Crect x='9' y='9' width='14' height='14' rx='3' fill='%23e8775f'/%3E%3C/svg%3E")
+           "rx='4' fill='%230f0f10'/%3E%3Crect x='9' y='9' width='14' height='14' fill='%234040ff'/%3E%3C/svg%3E")
 PLAY = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg>'
 
 
@@ -56,8 +56,8 @@ def head(site, title, desc, depth, image=None, path=''):
 <meta property="og:url" content="{esc(base + path)}">
 {og_image}
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#131210" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f10">
+<meta name="color-scheme" content="dark">
 <link rel="icon" href="{FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,7 +67,7 @@ def head(site, title, desc, depth, image=None, path=''):
 <body>
 <header class="top"><div class="wrap">
   <a class="mark" href="{up or './'}"><i></i>{esc(site['title'])}</a>
-  <nav class="nav"><a href="{up or './'}#work">Work</a><a href="{up or './'}#about">About</a><a class="hide-sm" href="https://github.com/{esc(site['github'])}">GitHub</a></nav>
+  <nav class="nav"><a href="{up or './'}#work">/work</a><a href="{up or './'}#about">/about</a><a class="hide-sm" href="https://github.com/{esc(site['github'])}">/github</a></nav>
 </div></header>
 '''
 
@@ -111,6 +111,7 @@ def build_home(site, pieces):
   <p class="kicker">{esc(site['owner'])} <span class="dot">/</span> {esc(site['place'])}</p>
   <h1>{inline(site['headline'])}</h1>
   <p class="lede">{inline(site['lede'])}</p>
+  <p class="live">{len(pieces)} pieces, all running in your browser</p>
 </section>
 
 <a class="featured" href="{esc(feat['slug'])}/">
@@ -163,7 +164,7 @@ def build_piece(site, pieces, i):
     note = f'<span class="note">{esc(p["load_note"])}</span>' if p.get('load_note') else ''
     out = head(site, f"{p['title']}: {site['title']}", p['summary'], 1, image=p['thumb'], path=p['slug'] + '/')
     out += f'''<main class="wrap piece">
-  <a class="back" href="../">&larr; All work</a>
+  <a class="back" href="../">&larr; /all work</a>
   {kicker(p)}
   <h1>{esc(p['title'])}</h1>
   <p class="standfirst">{inline(p['standfirst'])}</p>
