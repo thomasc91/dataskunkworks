@@ -12,7 +12,7 @@
     "lede": "Each project below has a short note on how I built it and a link to the code, so you can make your own.",
     "about": [
       "I'm Thomas Colin, a data scientist in Brisbane. I've spent my career turning data into things people remember, most recently at Atlassian.",
-      "Data Skunkworks is where the experiments live: each piece starts with a question and ends with something you can poke at. Lately most of them are built with AI, with me choosing the question, the data and how it should feel.",
+      "Data Skunkworks is where the experiments live: each piece starts with a question and ends with something you can poke at.",
       "The code for every piece is on [GitHub](https://github.com/thomasc91/dataskunkworks)."
     ]
   },
