@@ -1,0 +1,138 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <script src='d3.js'></script>
+  <!--Jquery-->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.min.js'></script>
+
+  <meta property='og:title' content='Vehicles of James Bond' />
+
+
+  <title>Every James Bond vehicle, visualised</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      $('.scroll-down').show("fade");
+      $('.scroll-down').fadeIn(1000).fadeOut(1000).fadeIn(1000).fadeOut(1000).fadeIn(1000);
+    });
+  </script>
+</head>
+
+
+<body>
+  <!-- <div id="info">
+        a
+    </div> -->
+
+  <div id="tooltip"></div>
+  <div id="graphic">
+    <div id="sections">
+      <section class="step">
+        <div class="title"></div>
+        <br><br>
+        <h1>Every James Bond vehicle, visualised</h1>
+        <p>By <a href='https://www.linkedin.com/in/thomas-a-colin/'>Thomas Colin</a></p>
+        <p>Data was provided by Koen Van den Eeckhout of baryon.be</p>
+        <hr>
+        <p>Hover over the nodes to see the details of the vehicles.</p>
+        <img src="hover.png">
+        <br><br>
+        <hr>
+        <p style="text-align:center"><i>Scroll down to see more</i></p>
+        <img src="down_arrow.png" class="scroll-down">
+
+      </section>
+      <section class="step">
+        <div class="title"></div>
+        <br><br>
+        <h1>Land, Air and Sea</h1>
+        <hr>
+        <p><i>Oh, I travel... A sort of licensed troubleshooter.</i></p>
+        <p>Bond - Thunderball (1965)</p>
+        <hr>
+        <p>Throughout the 25 Bond films, 007 has found himself in a variety of vehicles <span style="color:#968148; font-weight:bold">in the air</span>, <span style="color:#848484; font-weight:bold">on land</span> and <span
+            style="color:#5584AC; font-weight:bold">at sea</span>. Each vehicle is represented by a circle. The size of the circle represents
+          how long Bond spent
+          in the vehicle on screen.</p>
+        <svg id='legend3' width='400px' height='350px'></svg>
+      </section>
+      <section class='step'>
+        <div class="title"></div>
+        <br><br>
+        <h1>Which Bond had the most vehicle scenes?</h1>
+        <p>On average, Roger Moore's Bond spent the most time in vehicles with an average of 34% of the actor's film running time dedicated to an in-vehicle shot.</p>
+        <img src="sean-connery-aston.jpg" style="height:225px;">
+        <p>Daniel Craig's Bond spent the least amount of time driving, flying and saililng, with only 19% of the total time of his films spent in a vehicle.</p>
+
+      </section>
+      <section class='step'>
+        <div class="title"></div>
+        <br><br>
+        <h1>Which vehicles does Bond find himself in most often?</h1>
+        <hr>
+        <p><i>M's orders, 007. You'll be using this Aston Martin DB5 with modifications. Now, pay attention please. Windscreen - bulletproof. As are the side and the rear windows. Revolving number plates, naturally. Valid - all countries.</i></p>
+        <p>Q - Goldfinger (1964)</p>
+        <hr>
+        <p>The legendary 1964 Aston Martin DB5 appears 22 separate scenes across 8 of the Bond Films. The DB5 appeared in all but one of Daniel Craig's films.</p>
+      </section>
+      <section class='step'>
+        <div class="title"></div>
+        <br><br>
+        <h1>Bond <span style="color:#968148;">in the air</span></h1>
+        <p>The films feature Bond in 67 different types of aircraft.</p>
+        <img src="sean-connery-autogyro.jpg" style="height:225px;">
+        <p>The longest scene was in Moonraker (1979), where Roger Moore's Bond follows the villain Hugo Drax into space. The climax of the film features a laser battle on Drax's space station. Moonraker holds the world record for the largest number
+          of zero gravity wires in one scene.</p>
+      </section>
+      <section class='step'>
+        <div class="title"></div>
+        <br><br>
+        <h1>Bond <span style="color:#848484;">on land</span></h1>
+        <hr>
+        <p><i>Need I remind you, 007, that you have a license to kill, not to break the traffic laws.</i></p>
+        <p>Q - Goldeneye (1995)</p>
+        <hr>
+        <p>The Aston Martin DB5 became one of the most iconic cars in film history. For <i>Goldfinger</i> (1964) Aston Martin originally did not want their car to appear in the film. The producers had to pay them to use the car. Following the success
+          of the film, Aston Martin let them use as many cars as they wanted. For <i>Spectre</i> (2015), the company made 10 DB10s, of which 7 were destroyed during filming, at a total cost of £24 million.</p>
+      </section>
+      <section class='step'>
+        <div class="title"></div>
+        <br><br>
+        <h1>Bond <span style="color:#5584AC;">at sea</span></h1>
+        <p>In 2013, Elon Musk bought the Lotus Esprit underwater car featured in <i>The Spy Who Loved Me</i> (1977) for £616,000. </p>
+        <img src="lotus.jpg" style="height:225px;">
+        <p>The car was thought to be lost since its appearance in the film, but was rediscovered in a storage unit in 1989. The vehicle works as a submarine but not as a car, and reportedly cost over $100,000 to build in the 1970s.</p>
+      </section>
+      <section class='step'>
+        <div class="title"></div>
+        <br><br>
+        <h1>60 years of James Bond</h1>
+        <p>Since the introduction of the character into theatres in <i>Dr No</i> (1962), James Bond has appeared on-screen in 335 different vehicles.</p>
+        <p>Hopefully this data exploration was interesting. Special thanks to Koen Van den Eeckhout at <a href="https://baryon.be/">Baryon Design</a> for providing the data and <a
+            href="https://github.com/cuthchow/college-majors-visualisation">Cuthbert Chow</a> for
+          his scroller template.</p>
+        <p>You can read the write-up of how I created this visualisation scroller at my blog, <a href="https://dataskunkworks.com/">dataskunkworks.com</a>. </p>
+      </section>
+      <section class='step'>
+      </section>
+    </div>
+    <div id="vis">
+
+    </div>
+  </div>
+
+
+
+
+  <script src='scroller.js'></script>
+  <script src='sections.js'></script>
+
+</body>
+
+</html>

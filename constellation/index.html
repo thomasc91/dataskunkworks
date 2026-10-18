@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Constellation: Data Skunkworks</title>
+<meta name="description" content="An interactive map of how an AI-run analytics team could fit together, from its data sources to the work it ships.">
+<link rel="canonical" href="https://thomasc91.github.io/dataskunkworks/constellation/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Constellation: Data Skunkworks">
+<meta property="og:description" content="An interactive map of how an AI-run analytics team could fit together, from its data sources to the work it ships.">
+<meta property="og:url" content="https://thomasc91.github.io/dataskunkworks/constellation/">
+<meta property="og:image" content="https://thomasc91.github.io/dataskunkworks/thumbs/constellation.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#131210" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23131210'/%3E%3Crect x='9' y='9' width='14' height='14' rx='3' fill='%23e8775f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="mark" href="../"><i></i>Data Skunkworks</a>
+  <nav class="nav"><a href="../#work">Work</a><a href="../#about">About</a><a class="hide-sm" href="https://github.com/thomasc91">GitHub</a></nav>
+</div></header>
+<main class="wrap piece">
+  <a class="back" href="../">&larr; All work</a>
+  <p class="kicker">2026 <span class="dot">/</span> D3 <span class="dot">/</span> Network</p>
+  <h1>Constellation</h1>
+  <p class="standfirst">A galaxy of 101 nodes: data at the core, then departments, the skills their agents use, and the outputs those skills produce.</p>
+
+  <div class="stage" data-src="../projects/constellation/" data-title="Constellation">
+    <img class="poster" src="../thumbs/constellation.jpg" alt="">
+    <a class="start" href="../projects/constellation/"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg> Open the interactive</a>
+    
+    <span class="status" role="status"><i></i>Loading</span>
+  </div>
+  <div class="stage-bar">
+    <a href="../projects/constellation/">Open full screen</a>
+    <a href="https://github.com/thomasc91/dataskunkworks/tree/main/projects/constellation">View the code on GitHub &#8599;</a>
+  </div>
+
+  <div class="body">
+    <article class="writeup">
+    <h2>What you&#x27;re looking at</h2>
+    <p>The centre is a company knowledge base, ringed by six data sources and their tables. Seven departments orbit it, each branching into agent skills that end in outputs. Hover a department to light up its branch, click one to fly in and fan it out, and scroll or use the buttons to zoom.</p>
+    <h2>How it was made</h2>
+    <p>A single file of D3 v7. A seeded random walk shapes the branches, and the force layout is settled before anything is drawn, so the map comes out the same on every load. The departments and skills are illustrative and describe no real company. Built with an AI agent in August 2026.</p>
+    </article>
+    <aside class="facts"><dl>
+      <div><dt>Data</dt><dd>Illustrative, written by hand</dd></div>
+      <div><dt>Scale</dt><dd>7 departments, 26 branches, 101 nodes</dd></div>
+      <div><dt>Built with</dt><dd>D3 v7 and a seeded force layout, with an AI agent</dd></div>
+      <div><dt>Code</dt><dd><a href="https://github.com/thomasc91/dataskunkworks/tree/main/projects/constellation">projects/constellation on GitHub</a></dd></div>
+    </dl></aside>
+  </div>
+
+  <nav class="pager"><a class="prev" href="../bond-vehicles/"><span class="kicker">Previous</span><span class="t">Every James Bond vehicle</span></a><a class="next" href="../tom-cruise/"><span class="kicker">Next</span><span class="t">Tom Cruise&#x27;s film career</span></a></nav>
+</main>
+<footer class="foot"><div class="wrap">
+  <span>Thomas Colin, Brisbane</span>
+  <span>Every piece runs in your browser. <a href="https://github.com/thomasc91/dataskunkworks">The code is on GitHub.</a></span>
+</div></footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

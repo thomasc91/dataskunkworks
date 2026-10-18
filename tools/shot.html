@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Thumbnail capture</title>
+<style>html, body { margin: 0; height: 100%; overflow: hidden; } iframe { border: 0; width: 100%; height: 100%; display: block; }</style>
+</head>
+<body>
+<!-- Used by capture.mjs only. Loads a piece, hides its chrome and clicks a control, so the card thumbnail shows the work.
+     ?src=<path>&hide=<css selectors>&css=<extra css>&click=<css selectors>&scroll=<px>&delay=<ms> -->
+<iframe id="f"></iframe>
+<script>
+  var q = new URLSearchParams(location.search);
+  var f = document.getElementById('f');
+  f.addEventListener('load', function () {
+    setTimeout(function () {
+      var doc = f.contentDocument;
+      if (q.get('hide')) {
+        var s = doc.createElement('style');
+        s.textContent = q.get('hide') + ' { display: none !important; }';
+        doc.head.appendChild(s);
+      }
+      if (q.get('css')) {
+        var c = doc.createElement('style');
+        c.textContent = q.get('css');
+        doc.head.appendChild(c);
+      }
+      (q.get('click') || '').split('|').filter(Boolean).forEach(function (sel) {
+        var el = doc.querySelector(sel);
+        if (el) el.click();
+      });
+      if (q.get('scroll')) f.contentWindow.scrollTo(0, +q.get('scroll'));
+    }, +(q.get('delay') || 1500));
+  });
+  f.src = q.get('src');
+</script>
+</body>
+</html>

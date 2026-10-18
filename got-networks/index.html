@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Game of Thrones networks: Data Skunkworks</title>
+<meta name="description" content="Who matters in A Song of Ice and Fire, as force-directed networks of the characters in all five books.">
+<link rel="canonical" href="https://thomasc91.github.io/dataskunkworks/got-networks/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Game of Thrones networks: Data Skunkworks">
+<meta property="og:description" content="Who matters in A Song of Ice and Fire, as force-directed networks of the characters in all five books.">
+<meta property="og:url" content="https://thomasc91.github.io/dataskunkworks/got-networks/">
+<meta property="og:image" content="https://thomasc91.github.io/dataskunkworks/thumbs/got-networks.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#131210" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23131210'/%3E%3Crect x='9' y='9' width='14' height='14' rx='3' fill='%23e8775f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="mark" href="../"><i></i>Data Skunkworks</a>
+  <nav class="nav"><a href="../#work">Work</a><a href="../#about">About</a><a class="hide-sm" href="https://github.com/thomasc91">GitHub</a></nav>
+</div></header>
+<main class="wrap piece">
+  <a class="back" href="../">&larr; All work</a>
+  <p class="kicker">2019 <span class="dot">/</span> D3 <span class="dot">/</span> Network analysis</p>
+  <h1>Game of Thrones networks</h1>
+  <p class="standfirst">Two characters are linked when their names appear within 15 words of each other. Pick a book and watch the web of Westeros settle.</p>
+
+  <div class="stage" data-src="../projects/got-networks/" data-title="Game of Thrones networks">
+    <img class="poster" src="../thumbs/got-networks.jpg" alt="">
+    <a class="start" href="../projects/got-networks/"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg> Open the interactive</a>
+    
+    <span class="status" role="status"><i></i>Loading</span>
+  </div>
+  <div class="stage-bar">
+    <a href="../projects/got-networks/">Open full screen</a>
+    <a href="https://github.com/thomasc91/dataskunkworks/tree/main/projects/got-networks">View the code on GitHub &#8599;</a>
+  </div>
+
+  <div class="body">
+    <article class="writeup">
+    <h2>What you&#x27;re looking at</h2>
+    <p>One network per book. Each node is a character, sized by how central they are, and each line joins two characters who appear close together in the text. Click a book to load it, drag nodes around, scroll to zoom, and click and hold a character to fade everyone they aren&#x27;t connected to.</p>
+    <h2>What the data says</h2>
+    <p>In A Game of Thrones, Eddard Stark is the hub, with 66 connections and the highest centrality. A Storm of Swords is the densest book, with 303 characters and 1,008 links. By A Dance with Dragons the centre has moved to Jon Snow.</p>
+    <h2>How it was made</h2>
+    <p>D3&#x27;s force layout, with zoom and drag. The networks come from Andrew Beveridge&#x27;s <a href="https://github.com/mathbeveridge/asoiaf">asoiaf repository</a>, built for the <a href="https://networkofthrones.wordpress.com/">Network of Thrones</a> research with Jie Shan.</p>
+    </article>
+    <aside class="facts"><dl>
+      <div><dt>Data</dt><dd>Andrew Beveridge&#x27;s ASOIAF networks</dd></div>
+      <div><dt>Scale</dt><dd>5 books, 796 characters, 3,909 links</dd></div>
+      <div><dt>Built with</dt><dd>D3 v3 force layout</dd></div>
+      <div><dt>Code</dt><dd><a href="https://github.com/thomasc91/dataskunkworks/tree/main/projects/got-networks">projects/got-networks on GitHub</a></dd></div>
+    </dl></aside>
+  </div>
+
+  <nav class="pager"><a class="prev" href="../dance-of-the-dragons/"><span class="kicker">Previous</span><span class="t">The Dying of the Dragons</span></a><a class="next" href="../bond-vehicles/"><span class="kicker">Next</span><span class="t">Every James Bond vehicle</span></a></nav>
+</main>
+<footer class="foot"><div class="wrap">
+  <span>Thomas Colin, Brisbane</span>
+  <span>Every piece runs in your browser. <a href="https://github.com/thomasc91/dataskunkworks">The code is on GitHub.</a></span>
+</div></footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

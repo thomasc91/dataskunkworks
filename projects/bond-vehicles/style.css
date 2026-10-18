@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css?family=Merriweather&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Kosugi&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Domine:400,700&display=swap');
+
+body {
+  background-color: black;
+  color: white;
+  overflow-x: hidden;
+  margin: 0px;
+}
+
+.scroll-down {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  height: 80px;
+}
+
+#sections {
+  position: relative;
+  display: inline-block;
+  width: 400px;
+  top: 60px;
+  z-index: 90;
+  margin-right: 50px;
+  margin-left: 50px;
+}
+
+.categoryLegend {
+  font-family: "Domine";
+  font-size: 0.8em;
+}
+
+.step {
+  margin-bottom: 80px;
+  height: 700px;
+  font-family: "Domine";
+  font-weight: 400;
+  line-height: 1.4em;
+  text-align: justify;
+  /* display: flex;
+    flex-direction: column;
+    justify-content: space-around; */
+}
+
+h1, h2 {
+  font-weight: 700;
+  text-align: right;
+  line-height: 32px;
+}
+
+h1 {
+  font-size: 35px;
+}
+
+strong {}
+
+#graphic {
+  margin: 0px;
+  width: 1250px;
+  flex-direction: row;
+  align-items: top;
+}
+
+#graphic {
+  margin: auto;
+  width: 1250px;
+  flex-direction: row;
+  align-items: top;
+  justify-content: space-around;
+}
+
+#vis {
+  display: inline-block;
+  position: fixed;
+  top: 0px;
+  z-index: 1;
+  margin-left: 0;
+  margin-right: 0px;
+  height: 700px;
+  width: 600px;
+}
+
+#tooltip {
+  position: absolute;
+  display: none;
+  background: rgba(0, 0, 0, .7);
+  border-radius: 3px;
+  box-shadow: -3px 3px 15px #939393;
+  color: white;
+  padding: 6px;
+  font-family: "Merriweather";
+  font-size: 1.1em;
+  max-width: 400px;
+  z-index: 100;
+}
+
+svg circle:hover {
+  cursor: pointer;
+}
+
+.swatch {
+  fill: #939393;
+}
+
+.sizeLegend2 {}
+
+h1, h2, h3, h4, p, ul, li {
+  color: white;
+}
+
+a {
+  color: rgb(221, 0, 255);
+  text-decoration: none;
+}

@@ -1,0 +1,392 @@
+{
+  "site": {
+    "title": "Data Skunkworks",
+    "owner": "Thomas Colin",
+    "place": "Brisbane",
+    "github": "thomasc91",
+    "repo": "thomasc91/dataskunkworks",
+    "branch": "main",
+    "base_url": "https://thomasc91.github.io/dataskunkworks/",
+    "description": "Interactive data visualisations by Thomas Colin, each with a short note on how it was made and a link to its code.",
+    "headline": "Data stories you can *play with*.",
+    "lede": "Interactive visualisations by Thomas Colin, a data scientist in Brisbane. Every piece runs in your browser, and each one comes with a short note on how it was made and a link to its code.",
+    "about": [
+      "I'm Thomas Colin, a data scientist in Brisbane. I've spent my career turning data into things people remember, most recently at Atlassian.",
+      "Data Skunkworks is where the experiments live: each piece starts with a question and ends with something you can poke at. Lately most of them are built with AI, with me choosing the question, the data and how it should feel.",
+      "The code for every piece is on [GitHub](https://github.com/thomasc91/dataskunkworks)."
+    ]
+  },
+  "pieces": [
+    {
+      "slug": "brisbane-pixel-diorama",
+      "title": "Brisbane pixel diorama",
+      "featured": true,
+      "year": 2026,
+      "kicker": [
+        "three.js",
+        "WebGL",
+        "Open map data"
+      ],
+      "badge": "3D",
+      "summary": "A 3D pixel-art model of inner Brisbane, built from open map data, that you can fly around.",
+      "standfirst": "Every building within 5 km of West End, from the CBD towers to the Queenslanders, with traffic on the roads, CityCats on the river and a sun you can move.",
+      "entry": "projects/brisbane-pixel-diorama/",
+      "code": "projects/brisbane-pixel-diorama",
+      "thumb": "thumbs/brisbane-pixel-diorama.jpg",
+      "load_note": "Loads 11 MB of map data",
+      "capture": {
+        "wait": 14000,
+        "delay": 6000,
+        "click": "#photo",
+        "hide": "header, .toolbar, #hint, footer, #card"
+      },
+      "facts": [
+        [
+          "Data",
+          "OpenStreetMap and Overture Maps"
+        ],
+        [
+          "Scale",
+          "57,008 buildings and 272,044 trees in a 5 km circle"
+        ],
+        [
+          "Built with",
+          "three.js r170 and WebGL, with Claude"
+        ]
+      ],
+      "writeup": [
+        {
+          "h": "What you're looking at",
+          "p": [
+            "Drag to orbit, scroll to zoom, and hover or click a building to see its height and floors. The sun slider moves the shadows from 6am to 5:15pm, and the photo view frames Eagle Street.",
+            "The cars, buses, CityCats and planes are simulated, not live. Buildings are drawn 1.6 times taller than they really are, so the skyline still reads from a distance."
+          ]
+        },
+        {
+          "h": "How it was made",
+          "p": [
+            "The model is one data file: 57,008 building footprints with heights, 272,044 trees, 14,304 road segments, the parks, the river and its bridges, all clipped to a circle 5 km around West End. three.js draws it in WebGL, and the pixel finish, labels and traffic can each be switched off.",
+            "It was built with Claude in October 2026."
+          ]
+        },
+        {
+          "h": "The data",
+          "p": [
+            "Buildings, streets and parks are © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation. The model file is 11.4 MB, so give it a few seconds on a phone."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "dance-of-the-dragons",
+      "title": "The Dying of the Dragons",
+      "year": 2026,
+      "kicker": [
+        "Canvas",
+        "Scrollytelling"
+      ],
+      "badge": "Scroll",
+      "summary": "A hand-drawn, scrolling map of the Targaryen civil war, in which the sky slowly empties of dragons.",
+      "standfirst": "Twenty dragons flew over Westeros at the start of 129 AC. Two years of civil war later, four were left. Scroll through the war and watch it happen.",
+      "entry": "projects/dance-of-the-dragons/",
+      "code": "projects/dance-of-the-dragons",
+      "thumb": "thumbs/dance-of-the-dragons.jpg",
+      "capture": {
+        "wait": 9000,
+        "query": "#s6"
+      },
+      "facts": [
+        [
+          "Data",
+          "A Wiki of Ice and Fire (CC BY-SA 3.0)"
+        ],
+        [
+          "Scale",
+          "21 dragons, 37 people, 37 places, 14 steps"
+        ],
+        [
+          "Built with",
+          "Canvas and ES modules, no libraries, with Claude"
+        ]
+      ],
+      "writeup": [
+        {
+          "h": "What you're looking at",
+          "p": [
+            "A map of the war's theatre in ink and wash. Twenty-one dragons fly the war's routes at their relative sizes, and 37 people move, change sides and die across 14 steps. Scroll or use the arrow keys to move through the story, hover any dragon, person or place for its fate, and press M for the maester's notes."
+          ]
+        },
+        {
+          "h": "The data",
+          "p": [
+            "Every event, rider, death, place and size follows [A Wiki of Ice and Fire](https://awoiaf.westeros.org/index.php/Dance_of_the_Dragons), checked page by page. Sizes keep the ratios the wiki gives, so Vhagar is five times the length of Arrax. Of the 37 people on the map, 25 die during the war."
+          ]
+        },
+        {
+          "h": "How it was made",
+          "p": [
+            "Every line comes from a small hand-drawn canvas engine, first written for a redraw of Florence Nightingale's rose diagram, with no libraries. Built with Claude in September 2026. It's a non-commercial fan work, not affiliated with George R. R. Martin or HBO, and it uses no imagery from the television series."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "got-networks",
+      "title": "Game of Thrones networks",
+      "year": 2019,
+      "kicker": [
+        "D3",
+        "Network analysis"
+      ],
+      "badge": "Network",
+      "summary": "Who matters in A Song of Ice and Fire, as force-directed networks of the characters in all five books.",
+      "standfirst": "Two characters are linked when their names appear within 15 words of each other. Pick a book and watch the web of Westeros settle.",
+      "entry": "projects/got-networks/",
+      "code": "projects/got-networks",
+      "thumb": "thumbs/got-networks.jpg",
+      "capture": {
+        "wait": 10000
+      },
+      "facts": [
+        [
+          "Data",
+          "Andrew Beveridge's ASOIAF networks"
+        ],
+        [
+          "Scale",
+          "5 books, 796 characters, 3,909 links"
+        ],
+        [
+          "Built with",
+          "D3 v3 force layout"
+        ]
+      ],
+      "writeup": [
+        {
+          "h": "What you're looking at",
+          "p": [
+            "One network per book. Each node is a character, sized by how central they are, and each line joins two characters who appear close together in the text. Click a book to load it, drag nodes around, scroll to zoom, and click and hold a character to fade everyone they aren't connected to."
+          ]
+        },
+        {
+          "h": "What the data says",
+          "p": [
+            "In A Game of Thrones, Eddard Stark is the hub, with 66 connections and the highest centrality. A Storm of Swords is the densest book, with 303 characters and 1,008 links. By A Dance with Dragons the centre has moved to Jon Snow."
+          ]
+        },
+        {
+          "h": "How it was made",
+          "p": [
+            "D3's force layout, with zoom and drag. The networks come from Andrew Beveridge's [asoiaf repository](https://github.com/mathbeveridge/asoiaf), built for the [Network of Thrones](https://networkofthrones.wordpress.com/) research with Jie Shan."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "bond-vehicles",
+      "title": "Every James Bond vehicle",
+      "year": 2025,
+      "kicker": [
+        "D3",
+        "Scrollytelling"
+      ],
+      "badge": "Scroll",
+      "summary": "A scrolling story of every scene Bond spends in a car, plane, boat or train, across 25 films and 60 years.",
+      "standfirst": "492 scenes and about 14 hours of Bond behind the wheel, in the cockpit or at the helm. Scroll, and the scenes regroup to answer a new question at each step.",
+      "entry": "projects/bond-vehicles/",
+      "code": "projects/bond-vehicles",
+      "thumb": "thumbs/bond-vehicles.jpg",
+      "capture": {
+        "wait": 6000
+      },
+      "facts": [
+        [
+          "Data",
+          "Koen Van den Eeckhout, [baryon.be](https://baryon.be)"
+        ],
+        [
+          "Scale",
+          "492 scenes in 25 films, 1962 to 2021"
+        ],
+        [
+          "Built with",
+          "D3 v5 force layout and a scroll-driven story"
+        ]
+      ],
+      "writeup": [
+        {
+          "h": "What you're looking at",
+          "p": [
+            "Each circle is one scene in a vehicle, sized by how long it lasts and coloured by air, land or sea. As you scroll, the circles regroup: by element, by actor, by Bond's most-used vehicles and by class. Hover a circle for the film, the vehicle and the minutes on screen."
+          ]
+        },
+        {
+          "h": "What the data says",
+          "p": [
+            "The Spy Who Loved Me (1977) spends 53% of its running time in vehicles, the most of any film, while Dr. No spends 9%. The 1964 Aston Martin DB5 turns up in 22 scenes across 8 films, including four of Daniel Craig's five."
+          ]
+        },
+        {
+          "h": "How it was made",
+          "p": [
+            "D3 with a force layout that sends every circle to a new target at each scroll step, on Cuthbert Chow's scroller. The scene data was provided by Koen Van den Eeckhout."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "constellation",
+      "title": "Constellation",
+      "year": 2026,
+      "kicker": [
+        "D3",
+        "Network"
+      ],
+      "badge": "Network",
+      "summary": "An interactive map of how an AI-run analytics team could fit together, from its data sources to the work it ships.",
+      "standfirst": "A galaxy of 101 nodes: data at the core, then departments, the skills their agents use, and the outputs those skills produce.",
+      "entry": "projects/constellation/",
+      "code": "projects/constellation",
+      "thumb": "thumbs/constellation.jpg",
+      "capture": {
+        "wait": 16000
+      },
+      "facts": [
+        [
+          "Data",
+          "Illustrative, written by hand"
+        ],
+        [
+          "Scale",
+          "7 departments, 26 branches, 101 nodes"
+        ],
+        [
+          "Built with",
+          "D3 v7 and a seeded force layout, with an AI agent"
+        ]
+      ],
+      "writeup": [
+        {
+          "h": "What you're looking at",
+          "p": [
+            "The centre is a company knowledge base, ringed by six data sources and their tables. Seven departments orbit it, each branching into agent skills that end in outputs. Hover a department to light up its branch, click one to fly in and fan it out, and scroll or use the buttons to zoom."
+          ]
+        },
+        {
+          "h": "How it was made",
+          "p": [
+            "A single file of D3 v7. A seeded random walk shapes the branches, and the force layout is settled before anything is drawn, so the map comes out the same on every load. The departments and skills are illustrative and describe no real company. Built with an AI agent in August 2026."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "tom-cruise",
+      "title": "Tom Cruise's film career",
+      "year": 2025,
+      "kicker": [
+        "D3",
+        "Radial chart"
+      ],
+      "badge": "Film",
+      "summary": "Every Tom Cruise film as one wedge of a radial chart: its angle is the box office, its length the critics' score.",
+      "standfirst": "46 films from 1981 to 2023, laid out clockwise in release order. Hover a wedge for the film, its score and its takings.",
+      "entry": "projects/tom-cruise/",
+      "code": "projects/tom-cruise",
+      "thumb": "thumbs/tom-cruise.jpg",
+      "capture": {
+        "wait": 5000,
+        "delay": 1500,
+        "css": "body { margin-left: 340px !important; }"
+      },
+      "facts": [
+        [
+          "Data",
+          "Rotten Tomatoes scores and worldwide box office"
+        ],
+        [
+          "Scale",
+          "46 films, 1981 to 2023"
+        ],
+        [
+          "Built with",
+          "D3 v6"
+        ]
+      ],
+      "writeup": [
+        {
+          "h": "What you're looking at",
+          "p": [
+            "Each wedge is a film. Its angle is the worldwide box office, and its length and colour are the Rotten Tomatoes score, from red for the worst reviewed to blue for the best. Hover a wedge to lift it out and read its numbers. The face in the middle follows your cursor."
+          ]
+        },
+        {
+          "h": "What the data says",
+          "p": [
+            "Top Gun: Maverick (2022) made $1.48bn on its own. Mission: Impossible - Fallout has his best score, 97%, and Cocktail (1988) his worst, 9%. His films average 66% with critics."
+          ]
+        },
+        {
+          "h": "How it was made",
+          "p": [
+            "D3's pie layout with an outer radius that changes from wedge to wedge, so every wedge carries two numbers at once."
+          ]
+        }
+      ]
+    },
+    {
+      "slug": "nic-cage",
+      "title": "Nicolas Cage's film career",
+      "year": 2025,
+      "kicker": [
+        "D3",
+        "Radial chart"
+      ],
+      "badge": "Film",
+      "summary": "Every Nicolas Cage film as one wedge of a radial chart: its angle is the box office, its length the critics' score.",
+      "standfirst": "90 films from 1982 to 2021, laid out clockwise in release order. Hover a wedge for the film, its score and its takings.",
+      "entry": "projects/nic-cage/",
+      "code": "projects/nic-cage",
+      "thumb": "thumbs/nic-cage.jpg",
+      "capture": {
+        "wait": 5000,
+        "delay": 1500,
+        "css": "body { margin-left: 340px !important; }"
+      },
+      "facts": [
+        [
+          "Data",
+          "Rotten Tomatoes scores and worldwide box office"
+        ],
+        [
+          "Scale",
+          "90 films with a score, 1982 to 2021"
+        ],
+        [
+          "Built with",
+          "D3 v6"
+        ]
+      ],
+      "writeup": [
+        {
+          "h": "What you're looking at",
+          "p": [
+            "The same chart as [Tom Cruise's film career](../tom-cruise/), on a much longer filmography. Each wedge's angle is the worldwide box office, and its length and colour are the Rotten Tomatoes score. Hover a wedge to lift it out. The face in the middle follows your cursor."
+          ]
+        },
+        {
+          "h": "What the data says",
+          "p": [
+            "The Croods (2013) is his biggest film, at $573M. Pig (2021) and Spider-Man: Into the Spider-Verse share his best score, 97%, while Grand Isle (2019) scored 0%. His films average 49% with critics, against 66% for Cruise's."
+          ]
+        },
+        {
+          "h": "How it was made",
+          "p": [
+            "D3's pie layout with an outer radius that changes from wedge to wedge. Two films with no Rotten Tomatoes score yet are left out."
+          ]
+        }
+      ]
+    }
+  ]
+}
