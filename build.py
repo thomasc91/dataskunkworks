@@ -111,7 +111,6 @@ def build_home(site, pieces):
   <p class="kicker">{esc(site['owner'])} <span class="dot">/</span> {esc(site['place'])}</p>
   <h1>{inline(site['headline'])}</h1>
   <p class="lede">{inline(site['lede'])}</p>
-  <p class="live">{len(pieces)} pieces, all running in your browser</p>
 </section>
 
 <a class="featured" href="{esc(feat['slug'])}/">
