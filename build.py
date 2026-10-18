@@ -108,7 +108,10 @@ def build_home(site, pieces):
                image=feat['thumb'])
     out += f'''<main class="wrap">
 <section class="hero">
-  <p class="kicker">{esc(site['owner'])} <span class="dot">/</span> {esc(site['place'])}</p>
+  <div class="byline">
+    {f'<img class="avatar" src="{esc(site["avatar"])}" alt="{esc(site["owner"])}" width="48" height="48">' if site.get('avatar') else ''}
+    <p class="kicker">{esc(site['owner'])} <span class="dot">/</span> {esc(site['place'])}</p>
+  </div>
   <h1>{inline(site['headline'])}</h1>
   <p class="lede">{inline(site['lede'])}</p>
 </section>

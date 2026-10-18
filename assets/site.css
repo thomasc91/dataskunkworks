@@ -64,6 +64,9 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--blue-ink); outl
 
 /* Home hero: the pixel face, big and tight */
 .hero { padding: clamp(3rem, 9vw, 7rem) 0 clamp(2.25rem, 6vw, 4rem); }
+.byline { display: flex; align-items: center; gap: .875rem; }
+.avatar { width: 3rem; height: 3rem; flex: none; border-radius: 50%; object-fit: cover; background: var(--raise-2);
+  box-shadow: 0 0 0 1px var(--line-strong); }
 .hero h1 {
   margin: 1.125rem 0 0; max-width: 20ch; font: 400 clamp(3.25rem, 9vw, 7rem)/.88 var(--pixel); letter-spacing: -.01em;
   text-wrap: balance;
