@@ -22,6 +22,7 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferrie
 | `live-cyclists.js`, `cycling.json` | The cyclists, 190 km of bikeways and the council's bike counts |
 | `live-sky.js` | The real sun and the weather |
 | `live-ships.js` | The live ships |
+| `roll.js`, `props.json` | Roll mode, and the 9,484 bits of street furniture it starts on |
 | `airport.html`, `airport.json` | A second map: everything within 4.5 km of Brisbane Airport (1.8 MB) |
 | `airport.js`, `airport-features.json` | The airfield: runways with their markings, taxiways and aprons |
 
@@ -44,6 +45,10 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 - **Traffic levels:** the cars are simulated, but how many are on the roads near each signal follows Brisbane City Council's live traffic signal data, read straight from its open data portal every five minutes. At 9:25pm on a Monday about 1,600 of the 7,000 cars are out.
 - **Cyclists:** riders on 190 km of bikeways, as many as the council's 12 bike counters in the map count on that day of the week (October and November 2025, the latest published), spread over the day with commuting peaks, at about 20 km/h. About 350 ride at 7:30am on a weekday. Half stay home in the rain.
 - **The sun and weather:** the Now button keeps the slider at the time in Brisbane, with the sun where it really is today. The weather is Open-Meteo's for Brisbane now: cloud dims the light, rain falls, and the toolbar shows the temperature and sky. After dark the map shows the afternoon.
+
+## Roll mode
+
+The Roll button turns the map into a Katamari Damacy-style game. You push a sticky ball round Brisbane, starting on Boundary Street in West End, and anything smaller than it sticks to it: people and street furniture first, then cars and trees, houses, apartment blocks, the CBD towers and finally the Brisbane Skytower. Bigger things bounce it back, and the river stops it until it's 80 m across. Use the arrow keys or WASD, or drag on a touch screen. Everything it rolls up stays gone until the page reloads.
 
 ## Brisbane Airport
 

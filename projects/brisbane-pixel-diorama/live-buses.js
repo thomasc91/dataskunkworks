@@ -160,7 +160,7 @@
     }
 
     // --- Drawing, every frame ----------------------------------------------------------------------------------
-    const drawn = [];
+    const drawn = [], gone = new Set();
     const yAt = (x, z) => {
       const on = snap(x, z), f = on ? E[on.e][2] : 0;
       return { y: f & 1 && T ? T.deckAt(x, z) ?? ground(x, z) + Y : ground(x, z) + Y, tunnel: !!(f & 2) };
@@ -172,6 +172,7 @@
       let nb = 0, ne = 0, nm = 0;
       drawn.length = 0;
       for (const b of fleet.values()) {
+        if (gone.has(b)) continue; // rolled up in roll mode
         if (nb >= CAP || ne + 2 > 80) break;
         const st = state(b, t);
         if (!st || !b.heading) continue;
@@ -296,7 +297,7 @@
     canvas.addEventListener('pointerleave', () => { tip.hidden = true; });
     canvas.addEventListener('pointerdown', () => { tip.hidden = true; });
 
-    window.__liveBuses = { fleet, drawn, meshes: { buses, ends, mids }, get live() { return live; }, relay: RELAY };
+    window.__liveBuses = { fleet, drawn, gone, meshes: { buses, ends, mids }, get live() { return live; }, relay: RELAY };
     poll();
   }
 

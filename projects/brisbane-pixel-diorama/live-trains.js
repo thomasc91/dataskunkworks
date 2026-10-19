@@ -229,7 +229,7 @@
     }
 
     // --- Drawing, every frame ----------------------------------------------------------------------------------
-    const drawn = [];
+    const drawn = [], gone = new Set();
     function update() {
       const t = Date.now() / 1000 - LAG;
       const zoom = Math.max(1, Math.min(3, Math.pow(city.view.span / 1500, 0.6))); // wider zoomed out, like the cars
@@ -237,6 +237,7 @@
       let nc = 0, nm = 0;
       drawn.length = 0;
       for (const tr of trains.values()) {
+        if (gone.has(tr)) continue; // rolled up in roll mode
         if (nc + 2 > CAP * 2) break;
         const st = state(tr, t);
         if (!st || !tr.heading) continue;
@@ -358,7 +359,7 @@
     canvas.addEventListener('pointerleave', () => { tip.hidden = true; });
     canvas.addEventListener('pointerdown', () => { tip.hidden = true; });
 
-    window.__liveTrains = { trains, drawn, get live() { return live; }, relay: RELAY, snap, route };
+    window.__liveTrains = { trains, drawn, gone, get live() { return live; }, relay: RELAY, snap, route };
     poll();
   }
 

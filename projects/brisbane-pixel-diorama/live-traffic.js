@@ -7,9 +7,11 @@
 // A street near busy signals keeps all its cars; one near quiet signals shows only some, down to about one in
 // twelve at 3am. Roads far from any signal (the motorways, back streets) follow the city-wide median.
 //
-// traffic.json (from traffic/build_traffic.py) has where the signals are. ?traffic=off keeps every car.
+// traffic.json (from traffic/build_traffic.py) has where the signals are. ?traffic=off keeps every car, and so does roll
+// mode (roll.js), which wants every car there is to roll up.
 (() => {
-  if (new URLSearchParams(location.search).get('traffic') === 'off') return;
+  const Q = new URLSearchParams(location.search);
+  if (Q.get('traffic') === 'off' || Q.get('mode') === 'roll') return;
   const FEED = 'https://data.brisbane.qld.gov.au/api/explore/v2.1/catalog/datasets/traffic-data-at-intersection/exports/csv' +
     '?select=tsc,ds1,ds2,ds3,ds4&delimiter=,';
   const POLL_MS = 300000, RETRY_MS = 60000;

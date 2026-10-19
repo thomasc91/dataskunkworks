@@ -126,11 +126,12 @@
         total += path.riders.length;
       }
     }
-    const tmp = {};
+    const tmp = {}, drawn = []; // drawn: this frame's riders, for roll mode
     function update(dt) {
       const zoom = Math.max(1, Math.min(3, Math.pow(city.view.span / 1500, 0.6))) * SIZE;
       const A = bikes.instanceMatrix.array, B = jerseys.instanceMatrix.array;
       let n = 0;
+      drawn.length = 0;
       for (const path of paths) {
         for (const r of path.riders) {
           if (n >= CAP) break;
@@ -148,6 +149,7 @@
           const ox = fz * 1.0, oz = -fx * 1.0;
           const m = [fx * k, 0, fz * k, 0, 0, k, 0, 0, -fz * k, 0, fx * k, 0, tmp.x + ox, y, tmp.z + oz, 1];
           A.set(m, n * 16); B.set(m, n * 16);
+          drawn.push({ path, r, x: tmp.x + ox, y, z: tmp.z + oz, i: n });
           n++;
         }
       }
@@ -163,7 +165,7 @@
     credit.className = 'live-cyclists';
     credit.textContent = " · Cyclists: simulated from Brisbane City Council's bike counts (CC BY 4.0)";
     footer?.append(credit);
-    window.__liveCyclists = { paths, get total() { return total; }, retarget };
+    window.__liveCyclists = { paths, drawn, jerseys: JERSEYS, get total() { return total; }, retarget };
   }
 
   const wait = setInterval(() => {
