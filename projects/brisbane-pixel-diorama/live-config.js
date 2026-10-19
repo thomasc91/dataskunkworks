@@ -2,6 +2,9 @@
 // local relay, live/ferry_relay.py on port 4011, which the local apps hub runs. Anywhere else (GitHub Pages, a Claude
 // artifact) it's the public relay, live/worker.js on Cloudflare. ?live=<url> points them all at another relay, and
 // ?ferries=off, ?buses=off or ?planes=off keeps that layer simulated (?trains=off leaves the trains out).
+// Roll mode's best times always go to the public relay, so everyone's are on one board.
+window.__scoresUrl = 'https://brisbane-diorama-live.thomas-a-colin.workers.dev';
+
 window.__liveRelay = new URLSearchParams(location.search).get('live') ||
   (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)
     ? 'http://localhost:4011'

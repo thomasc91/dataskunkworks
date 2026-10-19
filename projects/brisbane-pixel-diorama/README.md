@@ -23,6 +23,8 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferrie
 | `live-sky.js` | The real sun and the weather |
 | `live-ships.js` | The live ships |
 | `roll.js`, `props.json`, `streets.json` | Roll mode, the 9,484 bits of street furniture it starts on, and the street names under its minimap |
+| `roll-game.js`, `roll-sound.js` | Roll mode's levels, collection, combos, bonuses and best times, and its sounds |
+| `airport-props.json`, `airport-streets.json` | The airport level's street furniture and street names |
 | `airport.html`, `airport.json` | A second map: everything within 4.5 km of Brisbane Airport (1.8 MB) |
 | `airport.js`, `airport-features.json` | The airfield: runways with their markings, taxiways and aprons |
 
@@ -49,6 +51,8 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 ## Roll mode
 
 The Roll button turns the map into a Katamari Damacy-style game. You push a sticky ball round Brisbane, starting on Boundary Street in West End, and anything smaller than it sticks to it: people, street furniture, ibis, cane toads, magpies and kangaroos first, then cars and trees, houses, CityCats, apartment blocks, the CBD towers and finally the Brisbane Skytower. Bigger things bounce it back, magpies swoop it while it's small, kangaroos bolt, and the river stops it until it's 80 m across. Use the arrow keys or WASD, or drag on a touch screen; scroll or pinch to zoom and right-drag to look round. A minimap shows the streets round the ball and the street it's on. Everything it rolls up stays gone until the page reloads.
+
+There are six levels: rolling up the whole city to the Skytower, a South Bank sprint, a kangaroo round-up at Toowong Cemetery, rush hour in the CBD, a race over the river, and plane spotting at the airport. Finished levels go on a best-times board anyone can post to with three initials. A collection book keeps every kind of thing you've rolled up, five of a kind in a row earn a combo, a real bus nearby can become the wanted bus for a bonus, rain makes the roads slippery, crashes knock things loose, and it all has sound.
 
 ## Brisbane Airport
 

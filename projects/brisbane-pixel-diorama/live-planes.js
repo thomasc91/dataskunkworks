@@ -190,7 +190,7 @@
     const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
     // --- Drawing, in place of the simulated planes while live -----------------------------------------------
-    const st = {}, st2 = {}, drawn = [];
+    const st = {}, st2 = {}, drawn = [], gone = new Set(); // gone: rolled up in roll mode
     let lastT = 0;
     function liveUpdate(dt, zoom) {
       const now = Date.now() / 1000, T = now - LAG;
@@ -200,6 +200,7 @@
       for (const m of pool) m.inUse = false;
       drawn.length = 0;
       for (const [hex, p] of planes) {
+        if (gone.has(hex)) continue; // rolled up in roll mode
         stateAt(p, T, st);
         const d = Math.hypot(st.x - ccx, st.z - ccz);
         if (d > SHOW) continue;
@@ -350,7 +351,7 @@
     canvas.addEventListener('pointerleave', () => { tip.hidden = true; });
     canvas.addEventListener('pointerdown', () => { tip.hidden = true; });
 
-    window.__livePlanes = { planes, drawn, get live() { return live; }, relay: RELAY, get lastT() { return lastT; } };
+    window.__livePlanes = { planes, drawn, gone, get live() { return live; }, relay: RELAY, get lastT() { return lastT; } };
     poll();
   }
 

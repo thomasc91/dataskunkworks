@@ -23,13 +23,16 @@
   const go = (on) => { const q = new URLSearchParams(location.search); on ? q.set('mode', 'roll') : q.delete('mode'); location.search = q.toString(); };
   document.getElementById('rollMode')?.addEventListener('click', () => go(true));
   if (!rolling) return;
+  // A level (roll-game.js reads ?level= and sets this before the map is ready) can move the start, the crowds and the
+  // wildlife, and name the files of street furniture and street names for another map.
+  const LEVEL = window.__rollLevel || {};
 
-  const START = [-27.4816, 153.0101]; // Boundary Street, West End, by Vulture Street
+  const START = LEVEL.start || [-27.4816, 153.0101]; // Boundary Street, West End, by Vulture Street
   // where people are thickest on the footpaths: the Queen Street Mall, South Bank, Boundary Street and the Valley
-  const CROWDS = [[-27.4698, 153.0251], [-27.4810, 153.0230], [-27.4812, 153.0095], [-27.4570, 153.0350]];
+  const CROWDS = LEVEL.crowds || [[-27.4698, 153.0251], [-27.4810, 153.0230], [-27.4812, 153.0095], [-27.4570, 153.0350]];
   const PEOPLE = 8000, WALK = [1.1, 1.7]; // m/s
   const SHIRTS = ['#e2453b', '#2f5fa8', '#f6c453', '#3a9b5c', '#ffffff', '#1d1f22', '#ff7a2f', '#7a3fa0', '#33b5c8', '#e8d6b9', '#c94f7c'];
-  const R0 = 1.2; // m: the ball's radius to begin with
+  const R0 = LEVEL.r0 || 1.2; // m: the ball's radius to begin with
   const PICK = 2.2; // it picks up things up to PICK times its radius in size
   const GROW = 1.2; // how much of a thing's volume the ball gains (more than it really holds: it's a game)
   const SWIM = 40; // m: the radius at which it can wade through the river
@@ -115,6 +118,12 @@
     const D = window.__dio, K = window.__terrain?.K, { city, data, life } = D;
     if (!K?.MeshDepthMaterial || !life?.cars) { hud.querySelector('.meta').textContent = 'Roll mode needs the full map.'; return; }
     const T = D.terrain;
+    // events for the game and sound layers (roll-game.js, roll-sound.js): pick, bump, drop, swooped, goal, finish, frame
+    const handlers = {};
+    const on = (type, fn) => (handlers[type] ||= []).push(fn);
+    const emit = (type, d = {}) => { for (const fn of handlers[type] || []) try { fn(d); } catch (e) { console.error(e); } };
+    const markers = []; // {x, z, colour}: rings on the minimap, for a level's target or a bonus
+    let paused = false;
     const [ox, oz] = data.origin, [ccx, ccz, cr] = data.circle;
     const MX = 111320 * Math.cos((oz * Math.PI) / 180), MZ = 110540;
     const toXZ = (lat, lng) => [(lng - ox) * MX, -(lat - oz) * MZ];
@@ -198,7 +207,7 @@
     const pgrid = new Map(), props = [];
     let propMesh = null;
     try {
-      const r = await fetch('props.json');
+      const r = await fetch(LEVEL.props || 'props.json');
       const pj = r.ok ? await r.json() : null;
       if (pj) {
         const n = pj.props.length / 3;
@@ -211,7 +220,7 @@
           const a = ((Math.sin(k * 12.9898) * 43758.5453) % 1) * Math.PI * 2, c = Math.cos(a), sn = Math.sin(a), y = (T ? T.h(x, z) : 0) + H / 2;
           A.set([c * W, 0, -sn * W, 0, 0, H, 0, 0, sn * Dp, 0, c * Dp, 0, x, y, z, 1], k * 16);
           propMesh.setColorAt(k, C.set(hex));
-          const p = { k, x, z, y, W, H, D: Dp, size: Math.max(W, H, Dp), vol: W * H * Dp * 0.5, colour: [C.r, C.g, C.b], name, gone: false };
+          const p = { k, kind, x, z, y, W, H, D: Dp, size: Math.max(W, H, Dp), vol: W * H * Dp * 0.5, colour: [C.r, C.g, C.b], name, gone: false };
           props.push(p);
           add(pgrid, x, z, p);
         }
@@ -297,11 +306,13 @@
     const fauna = []; // {kind, x, z, y, h, home, ...}
     const bins = props.filter((p) => /a bin|recycling/.test(p.name));
     const bigParks = parks.filter((q) => q.area > 120000);
-    for (const [kind, spec] of Object.entries(FAUNA)) {
-      for (let n = 0; n < spec.n; ) {
+    for (const [kind, spec0] of Object.entries(FAUNA)) {
+      const want = LEVEL.fauna?.[kind] || {}, spec = { ...spec0, n: want.n ?? spec0.n };
+      const nearParks = want.near ? parks.filter((q) => Math.hypot((q.x0 + q.x1) / 2 - startXZ[0], (q.z0 + q.z1) / 2 - startXZ[1]) < want.near) : null;
+      for (let n = 0, tries = 0; n < spec.n && tries < spec.n * 50; tries++) {
         let at = null;
         if (kind === 'ibis' && bins.length && Math.random() < 0.4) { const b = bins[(Math.random() * bins.length) | 0]; at = [b.x + (Math.random() - 0.5) * 8, b.z + (Math.random() - 0.5) * 8]; }
-        else at = spotIn(pickPark(kind === 'roo' && bigParks.length ? bigParks : parks));
+        else at = spotIn(pickPark(nearParks?.length ? nearParks : kind === 'roo' && bigParks.length ? bigParks : parks));
         if (!at || wet(...at)) continue;
         const group = kind === 'roo' ? spec.mob : 1;
         for (let g = 0; g < group && n < spec.n; g++, n++) {
@@ -378,7 +389,8 @@
       if (r >= MAGPIE_CATCH && Math.hypot(a.x - px, a.z - pz) < r * 2) return; // big enough: pickAll takes it mid-air
       const side = Math.random() < 0.5 ? -1 : 1, d = Math.hypot(a.x - a.from[0], a.z - a.from[1]) || 1;
       vx += (-(a.z - a.from[1]) / d) * side * 5; vz += ((a.x - a.from[0]) / d) * side * 5; shake = 0.3;
-      say('Swooped by a magpie!');
+      say('Swooped by a magpie!', null, true);
+      emit('swooped');
     }
 
     // --- A cutaway: buildings, trees and props between the camera and the ball are see-through near it -------------
@@ -478,9 +490,10 @@
 
     // --- The ball's state -------------------------------------------------------------------------------------------
     const deck = (x, z, r) => (T ? T.deckAt(x, z, Math.min(30, r)) : null);
-    // start on the footpath of the road nearest Boundary Street, West End
+    // start on the footpath of the road nearest Boundary Street, West End (or right where a level says, off the river)
     let [px, pz] = toXZ(...START);
-    {
+    if (LEVEL.snap === false) while (wet(px, pz)) px += 5;
+    else {
       let best = Infinity, bx = px, bz = pz;
       for (const [type, , , w, , , p] of data.traffic?.edges || []) {
         if (type !== 0 || w < 8) continue;
@@ -511,7 +524,8 @@
     const mul = (v) => [Rm[0] * v[0] + Rm[1] * v[1] + Rm[2] * v[2], Rm[3] * v[0] + Rm[4] * v[1] + Rm[5] * v[2], Rm[6] * v[0] + Rm[7] * v[1] + Rm[8] * v[2]];
 
     // Stick a thing to the ball where it touched: its up along the ball's radius, its length across the roll.
-    function stick(kind, wx, wy, wz, dims, colour) {
+    let seq = 0;
+    function stick(kind, wx, wy, wz, dims, colour, vol = 0, name = 'something', key = '') {
       let dx = wx - px, dy = wy - py, dz = wz - pz, l = Math.hypot(dx, dy, dz) || 1;
       dx /= l; dy /= l; dz /= l;
       const u = mulT([dx, dy, dz]); // in the ball's own frame
@@ -520,11 +534,14 @@
       const s = [t[1] * u[2] - t[2] * u[1], t[2] * u[0] - t[0] * u[2], t[0] * u[1] - t[1] * u[0]];
       const sink = kind === 'box' ? r * 0.78 + dims[1] / 2 : r * 0.8;
       const list = stuck[kind];
-      list.push({ p: u.map((c) => c * sink), t, u, s, dims, colour });
+      list.push({ p: u.map((c) => c * sink), t, u, s, dims, colour, vol, name, key, seq: ++seq });
       if (list.length > CAP[kind]) list.shift(); // the oldest are deep inside by now
     }
 
-    function say(text, big) {
+    let prioAt = -9;
+    function say(text, big, prio = false) { // prio: the game's own news (combos, bonuses, the collection) outranks pick-ups for a moment
+      if (prio) prioAt = clock;
+      else if (!big && clock - prioAt < 1.8) return;
       toast.textContent = text; toast.classList.add('on'); toastAt = clock;
       if (big) { banner.innerHTML = big; banner.classList.add('on'); bannerAt = clock; }
     }
@@ -540,15 +557,19 @@
       const cap = PICK * r, reach = r * 1.05;
       picksThisFrame = 0;
       let best = null;
-      const note = (name, size) => { things++; if (!best || size > best.size) best = { name, size }; };
+      const note = (name, size, key = '', extra = {}) => {
+        things++;
+        if (!best || size > best.size) best = { name, size };
+        emit('pick', { name, size, key, ...extra });
+      };
       // people
       if (cap >= PH) for (const q of people) {
         if (q.gone || picksThisFrame > 150 || Math.abs(q.x - px) > reach + 2 || Math.abs(q.z - pz) > reach + 2) continue;
         if (Math.hypot(q.x - px, q.z - pz) > reach + 0.6) continue;
         q.gone = true; picksThisFrame++; stats.person = (stats.person || 0) + 1;
         const c = crowdMesh.instanceColor.array;
-        stick('box', q.x, ground(q.x, q.z) + PH / 2, q.z, [0.6 * 1.4, PH, 0.45 * 1.4], [c[people.indexOf(q) * 3], c[people.indexOf(q) * 3 + 1], c[people.indexOf(q) * 3 + 2]]);
-        grow(0.25 * PROP_GROW * 6); note('a person', PH);
+        stick('box', q.x, ground(q.x, q.z) + PH / 2, q.z, [0.6 * 1.4, PH, 0.45 * 1.4], [c[people.indexOf(q) * 3], c[people.indexOf(q) * 3 + 1], c[people.indexOf(q) * 3 + 2]], 0.25 * PROP_GROW * 6, 'a person', 'person');
+        grow(0.25 * PROP_GROW * 6); note('a person', PH, 'person');
       }
       // animals (a magpie only when it's low enough to touch)
       for (const a of fauna) {
@@ -557,14 +578,15 @@
         if (Math.hypot(a.x - px, a.z - pz) > reach + a.size * 0.3 || a.y - py > r + a.size) continue;
         a.gone = true; picksThisFrame++; stats[a.kind] = (stats[a.kind] || 0) + 1;
         const S = a.spec.scale;
-        stick('box', a.x, a.y + (a.spec.tall * S) / 2, a.z, [a.spec.len * S, a.spec.tall * S, Math.max(0.15, a.spec.len * 0.4) * S], FCOL[a.kind]);
-        grow(a.spec.worth * PROP_GROW); note(a.spec.label + (a.state === 'swoop' ? ' in mid-swoop' : ''), a.size + (a.kind === 'roo' ? 5 : 0));
+        stick('box', a.x, a.y + (a.spec.tall * S) / 2, a.z, [a.spec.len * S, a.spec.tall * S, Math.max(0.15, a.spec.len * 0.4) * S], FCOL[a.kind], a.spec.worth * PROP_GROW, a.spec.label, 'animal:' + a.kind);
+        grow(a.spec.worth * PROP_GROW); note(a.spec.label + (a.state === 'swoop' ? ' in mid-swoop' : ''), a.size + (a.kind === 'roo' ? 5 : 0), 'animal:' + a.kind);
       }
       // street furniture
       let propsDirty = false;
       near(pgrid, px, pz, reach + 6, (p) => {
         if (p.gone || picksThisFrame > 150 || Math.hypot(p.x - px, p.z - pz) > reach + p.size * 0.3) return;
-        if (p.size > cap) { // a lamp post or shelter too big yet: a knock
+        if (p.size > cap) { // a shelter or phone booth too big yet: a knock (the ball squeezes past thin poles)
+          if (Math.min(p.W, p.D) < 0.6) return;
           const dx = px - p.x, dz = pz - p.z, l = Math.hypot(dx, dz) || 1, vn = (vx * dx + vz * dz) / l;
           if (vn < 0) { vx -= 1.3 * vn * (dx / l); vz -= 1.3 * vn * (dz / l); }
           return;
@@ -572,8 +594,8 @@
         p.gone = true; propsDirty = true; picksThisFrame++;
         const A = propMesh.instanceMatrix.array;
         for (let q = 0; q < 11; q++) A[p.k * 16 + q] = 0;
-        stick('box', p.x, p.y, p.z, [p.W, p.H, p.D], p.colour);
-        grow(p.vol * PROP_GROW); note(p.name, p.size);
+        stick('box', p.x, p.y, p.z, [p.W, p.H, p.D], p.colour, p.vol * PROP_GROW, p.name, 'prop:' + p.kind);
+        grow(p.vol * PROP_GROW); note(p.name, p.size, 'prop:' + p.kind);
         stats.prop = (stats.prop || 0) + 1;
       });
       if (propsDirty) { propMesh.instanceMatrix.needsUpdate = true; city.invalidate(); }
@@ -598,8 +620,8 @@
           const x = a[o + 12], z = a[o + 14];
           if ((x - px) ** 2 + (z - pz) ** 2 > (reach + 3) ** 2) continue;
           goneCars.add(i); stats.car++; picksThisFrame++;
-          stick('car', x, a[o + 13] + 1.2, z, [1, 1, 1], carC ? [carC[i * 3], carC[i * 3 + 1], carC[i * 3 + 2]] : [1, 1, 1]);
-          grow(23); note('a car', 6.6);
+          stick('car', x, a[o + 13] + 1.2, z, [1, 1, 1], carC ? [carC[i * 3], carC[i * 3 + 1], carC[i * 3 + 2]] : [1, 1, 1], 23, 'a car', 'car');
+          grow(23); note('a car', 6.6, 'car');
         }
       }
       // trees
@@ -621,8 +643,8 @@
         for (let q = 0; q < 11; q++) a[o + q] = 0;
         treesDirty.add(m);
         const c = m.instanceColor?.array;
-        stick('tree', t.x, t.y + t.sy, t.z, [t.s, t.sy, t.s], c ? [c[t.i * 3], c[t.i * 3 + 1], c[t.i * 3 + 2]] : [0.35, 0.56, 0.3]);
-        grow(4 * t.s * t.s * 2 * t.sy * 0.35); note('a tree', t.size);
+        stick('tree', t.x, t.y + t.sy, t.z, [t.s, t.sy, t.s], c ? [c[t.i * 3], c[t.i * 3 + 1], c[t.i * 3 + 2]] : [0.35, 0.56, 0.3], 4 * t.s * t.s * 2 * t.sy * 0.35, 'a tree', 'tree');
+        grow(4 * t.s * t.s * 2 * t.sy * 0.35); note('a tree', t.size, 'tree');
       });
       // cyclists
       for (const d of window.__liveCyclists?.drawn || []) {
@@ -630,8 +652,8 @@
         const k = d.path.riders.indexOf(d.r);
         if (k < 0) continue;
         d.path.riders.splice(k, 1); stats.cyclist++;
-        stick('box', d.x, d.y + 1.5, d.z, [3.4, 3.4, 1], [0.9, 0.3, 0.25]);
-        grow(6); note('a cyclist', 3.6);
+        stick('box', d.x, d.y + 1.5, d.z, [3.4, 3.4, 1], [0.9, 0.3, 0.25], 6, 'a cyclist', 'cyclist');
+        grow(6); note('a cyclist', 3.6, 'cyclist');
       }
       // live buses and Metro, and trains
       const LB = window.__liveBuses;
@@ -639,15 +661,15 @@
         const size = d.b.metro ? 30 : 15.6;
         if (size > cap || LB.gone.has(d.b) || Math.hypot(d.x - px, d.z - pz) > reach + size / 3) continue;
         LB.gone.add(d.b); stats.bus++;
-        stick('box', d.x, d.y + 2, d.z, [size, 4.2, 3.3], d.b.metro ? [0.24, 0.56, 0.84] : [0.96, 0.96, 0.94]);
-        grow(size * 3.3 * 4.2 * 0.6); note(d.b.metro ? `Metro ${d.b.ref}` : `Bus ${d.b.ref}`, size);
+        stick('box', d.x, d.y + 2, d.z, [size, 4.2, 3.3], d.b.metro ? [0.24, 0.56, 0.84] : [0.96, 0.96, 0.94], size * 3.3 * 4.2 * 0.6, d.b.metro ? `Metro ${d.b.ref}` : `Bus ${d.b.ref}`, d.b.metro ? 'metro' : 'bus');
+        grow(size * 3.3 * 4.2 * 0.6); note(d.b.metro ? `Metro ${d.b.ref}` : `Bus ${d.b.ref}`, size, d.b.metro ? 'metro' : 'bus', { bus: d.b });
       }
       const LT = window.__liveTrains;
       for (const d of LT?.drawn || []) {
         if (147 > cap || LT.gone.has(d.tr) || Math.hypot(d.x - px, d.z - pz) > reach + 50) continue;
         LT.gone.add(d.tr); stats.train++;
-        stick('box', d.x, d.y + 3, d.z, [147, 6.2, 3.2], [0.95, 0.95, 0.93]);
-        grow(147 * 3.2 * 6.2 * 0.6); note('a train', 147);
+        stick('box', d.x, d.y + 3, d.z, [147, 6.2, 3.2], [0.95, 0.95, 0.93], 147 * 3.2 * 6.2 * 0.6, 'a train', 'train');
+        grow(147 * 3.2 * 6.2 * 0.6); note('a train', 147, 'train');
       }
       // CityCats: 25 m long, so from about 23 m across, from the bank or a terminal (or wading, from 80 m)
       if (cap >= 25) {
@@ -655,8 +677,8 @@
         if (LF?.live) for (const d of LF.drawn) {
           if (LF.gone.has(d.b) || Math.hypot(d.x - px, d.z - pz) > reach + 10) continue;
           LF.gone.add(d.b); stats.ferry++;
-          stick('box', d.x, 2.5, d.z, [25, 4.5, 9], [0.96, 0.96, 0.95]);
-          grow(25 * 9 * 4.5 * 0.5); note(d.name ? `the CityCat ${title(d.name)}` : 'a CityCat', 60);
+          stick('box', d.x, 2.5, d.z, [25, 4.5, 9], [0.96, 0.96, 0.95], 25 * 9 * 4.5 * 0.5, 'a CityCat', 'ferry');
+          grow(25 * 9 * 4.5 * 0.5); note(d.name ? `the CityCat ${title(d.name)}` : 'a CityCat', 60, 'ferry');
         }
         else if (life.cats?.mesh?.visible) {
           const a = life.cats.mesh.instanceMatrix.array;
@@ -664,10 +686,28 @@
             const o = i * 16;
             if (goneCats.has(i) || (!a[o] && !a[o + 2]) || Math.hypot(a[o + 12] - px, a[o + 14] - pz) > reach + 10) continue;
             goneCats.add(i); stats.ferry++;
-            stick('box', a[o + 12], 2.5, a[o + 14], [25, 4.5, 9], [0.96, 0.96, 0.95]);
-            grow(25 * 9 * 4.5 * 0.5); note('a CityCat', 60);
+            stick('box', a[o + 12], 2.5, a[o + 14], [25, 4.5, 9], [0.96, 0.96, 0.95], 25 * 9 * 4.5 * 0.5, 'a CityCat', 'ferry');
+            grow(25 * 9 * 4.5 * 0.5); note('a CityCat', 60, 'ferry');
           }
         }
+      }
+      // aircraft on the ground (the airport map): jets about 45 m, helicopters 15
+      const LP = window.__livePlanes;
+      if (LP?.gone) for (const d of LP.drawn) {
+        if (!d.onGround || LP.gone.has(d.hex)) continue;
+        const size = d.heli ? 15 : 45;
+        if (size > cap || Math.hypot(d.x - px, d.z - pz) > reach + size / 3) continue;
+        LP.gone.add(d.hex); stats.plane = (stats.plane || 0) + 1;
+        const nm = [d.airline?.[0], (d.info?.flight || '').trim()].filter(Boolean).join(' ') || (d.heli ? 'a helicopter' : 'a plane');
+        stick('box', d.x, d.y + 3, d.z, [size, size * 0.18, size * 0.85], [0.95, 0.95, 0.96], size * size * 4, nm, 'plane');
+        grow(size * size * 4); note(nm, size + 40, 'plane');
+      }
+      // things a crash knocked loose, once they've landed
+      for (const o of loose) {
+        if (o.gone || o.flying || o.size > cap || Math.hypot(o.x - px, o.z - pz) > reach + o.size * 0.3) continue;
+        o.gone = true;
+        stick('box', o.x, o.y + o.dims[1] / 2, o.z, o.dims, o.colour, o.vol, o.name, o.key);
+        grow(o.vol); note(o.name, o.size, o.key, { again: true });
       }
       // buildings: pick up the small ones, bounce off the big ones
       near(bgrid, px, pz, reach + 30, (p) => {
@@ -679,13 +719,15 @@
           let vol = 0, H = 0;
           for (const q of all) { q.gone = true; vol += q.vol; H = Math.max(H, q.H); }
           goneData[p.bid * 4] = 255; buildingsDirty = true; stats.building++;
-          stick('box', p.cx, ground(p.cx, p.cz) + H / 2, p.cz, [Math.max(2, p.w * 0.9), Math.max(2, H), Math.max(2, p.d * 0.9)], tint(p.bid));
+          const info0 = data.binfo[p.bid] || [];
+          stick('box', p.cx, ground(p.cx, p.cz) + H / 2, p.cz, [Math.max(2, p.w * 0.9), Math.max(2, H), Math.max(2, p.d * 0.9)], tint(p.bid), vol,
+            info0[0] || TYPES[info0[1]] || 'a building', info0[0] ? 'landmark:' + info0[0] : 'building');
           grow(vol);
           const info = data.binfo[p.bid] || [], named = info[0], tall = (info[2] ?? p.H / 1.6);
           const name = named ? (tall > 40 ? `${named} (${Math.round(tall)} m)` : named) : TYPES[info[1]] || 'a building';
-          note(name, p.size + (named ? 30 : 0));
+          note(name, p.size + (named ? 30 : 0), named ? 'landmark:' + named : 'building', { landmark: named || null });
           if (named) stats.names.push(named);
-          if (named === 'Brisbane Skytower' && !finished) finish();
+          if (named === (LEVEL.finishOn ?? 'Brisbane Skytower') && !finished) finish();
         } else {
           // too big: push the ball out and bounce it back
           let nx = px - qx, nz = pz - qz, l = Math.hypot(nx, nz);
@@ -694,10 +736,59 @@
           const push = inside ? r * 0.92 + d : r * 0.92 - d;
           px += nx * push; pz += nz * push;
           const vn = vx * nx + vz * nz;
-          if (vn < 0) { vx -= 1.4 * vn * nx; vz -= 1.4 * vn * nz; if (-vn > 4) shake = 0.25; }
+          if (vn < 0) {
+            vx -= 1.4 * vn * nx; vz -= 1.4 * vn * nz;
+            if (-vn > 4) shake = 0.25;
+            if (-vn > 2) emit('bump', { speed: -vn });
+            if (-vn > 7 + r * 0.15) crash(-vn, nx, nz);
+          }
         }
       });
       if (best) say(`+ ${best.name}`);
+    }
+    // A hard crash knocks the last few things off: they fly out and land, and can be rolled up again.
+    const loose = [];
+    const looseMesh = new K.InstancedMesh(new K.BoxGeometry(1, 1, 1), new K.MeshStandardMaterial({ roughness: 0.8 }), 400);
+    looseMesh.layers.mask = layer; looseMesh.frustumCulled = false; looseMesh.count = 0; looseMesh.name = 'loose';
+    looseMesh.setColorAt(0, new Color('#ffffff'));
+    life.root.add(looseMesh);
+    let crashCool = 0;
+    function crash(speed, nx, nz) {
+      if (crashCool > 0) return;
+      crashCool = 1.2;
+      const all = [...stuck.car, ...stuck.tree, ...stuck.box].sort((a, b) => b.seq - a.seq);
+      const n = Math.min(all.length, Math.max(1, Math.min(6, Math.floor((speed - 5) / 3))));
+      let lost = 0;
+      for (const o of all.slice(0, n)) {
+        for (const list of Object.values(stuck)) { const i = list.indexOf(o); if (i >= 0) list.splice(i, 1); }
+        r = Math.max(R0, Math.cbrt(Math.max(R0 ** 3, r ** 3 - o.vol * GROW * 0.239)));
+        const w = mul(o.p), dims = o.dims.length === 3 && o.dims[0] === 1 && o.dims[1] === 1 ? [6.6, 2.4, 2.8] : o.dims; // a car's stuck at its model's size
+        const a = Math.random() * Math.PI * 2, out = 4 + speed * 0.6;
+        loose.push({ x: px + w[0], y: py + w[1], z: pz + w[2], vx: nx * out + Math.cos(a) * 3, vy: 6 + Math.random() * 4, vz: nz * out + Math.sin(a) * 3,
+          dims, colour: o.colour, vol: o.vol, name: o.name, key: o.key, size: Math.max(...dims), flying: true, gone: false });
+        lost++;
+      }
+      if (loose.length > 400) loose.splice(0, loose.length - 400);
+      if (lost) { say(`Crash! You lost ${lost === 1 ? 'something' : lost + ' things'}`, null, true); emit('drop', { n: lost, speed }); shake = 0.4; }
+    }
+    function updateLoose(dt) {
+      crashCool -= dt;
+      const A = looseMesh.instanceMatrix.array, C = looseMesh.instanceColor.array;
+      let n = 0;
+      for (const o of loose) {
+        if (o.gone) continue;
+        if (o.flying) {
+          o.vy -= 14 * dt; o.x += o.vx * dt; o.y += o.vy * dt; o.z += o.vz * dt;
+          const g = ground(o.x, o.z);
+          if (o.y <= g && o.vy < 0) { o.y = g; o.flying = false; }
+        }
+        const [dx, dy, dz] = o.dims;
+        A.set([dx, 0, 0, 0, 0, dy, 0, 0, 0, 0, dz, 0, o.x, o.y + dy / 2, o.z, 1], n * 16);
+        C.set(o.colour, n * 3);
+        n++;
+      }
+      looseMesh.count = n;
+      looseMesh.instanceMatrix.needsUpdate = looseMesh.instanceColor.needsUpdate = true;
     }
     function closest(p, x, z) { // the nearest point on a building's outline, and whether (x, z) is inside it
       const a = p.pts, n = a.length / 2;
@@ -724,7 +815,8 @@
         ...n(stats.roo, 'kangaroo', 'kangaroos'), ...n(stats.ibis, 'ibis', 'ibis'), ...n(stats.magpie, 'magpie', 'magpies'), ...n(stats.toad, 'cane toad', 'cane toads'),
         ...n(stats.prop, 'bit of street furniture', 'bits of street furniture')];
       const all = list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}` : list[0];
-      say('+ Brisbane Skytower', `You rolled up Brisbane in ${mmss(clock)}<small>That's ${all}. Keep rolling.</small>`);
+      if (!LEVEL.quietFinish) say('+ Brisbane Skytower', `You rolled up Brisbane in ${mmss(clock)}<small>That's ${all}. Keep rolling.</small>`);
+      emit('finish', { time: clock, size: 2 * r, things, summary: all });
     }
 
     // --- Controls ---------------------------------------------------------------------------------------------------
@@ -734,6 +826,7 @@
       KeyQ: 'ol', KeyE: 'or', KeyR: 'tu', KeyF: 'td', Equal: 'zi', NumpadAdd: 'zi', Minus: 'zo', NumpadSubtract: 'zo' };
     let zoom = 1, tilt = 0; // the player's own camera: zoom (x the automatic span) and tilt (degrees on the automatic angle)
     addEventListener('keydown', (e) => {
+      if (e.target.closest?.('input, textarea')) return; // typing initials, not rolling
       if (e.code === 'Escape') return go(false);
       const k = KEYMAP[e.code];
       if (!k) return;
@@ -806,6 +899,12 @@
       // animals worth chasing, as dots
       const dot = (x, z, rad, col) => { mctx.beginPath(); mctx.arc(x, z, rad, 0, Math.PI * 2); mctx.fillStyle = col; mctx.fill(); };
       if (R < 600) for (const a of fauna) if (!a.gone && a.x > x0 && a.x < x1 && a.z > z0 && a.z < z1 && a.kind !== 'toad') dot(a.x, a.z, 2.6 / s, a.kind === 'roo' ? '#9b6a3c' : a.kind === 'magpie' ? '#1d1d1d' : '#f7f7f2');
+      for (const m of markers) { // a level's target or a bonus: a ring, pinned to the rim when it's off the map
+        let mx = m.x, mz = m.z;
+        const d = Math.hypot(mx - px, mz - pz), lim = R * 0.9;
+        if (d > lim) { mx = px + ((mx - px) / d) * lim; mz = pz + ((mz - pz) / d) * lim; }
+        mctx.beginPath(); mctx.arc(mx, mz, 9 / s, 0, Math.PI * 2); mctx.lineWidth = 4 / s; mctx.strokeStyle = m.colour || '#f3b61f'; mctx.stroke();
+      }
       dot(px, pz, Math.max(r, 5 / s), '#e8478b');
       // a north mark on the rim
       mctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -816,7 +915,7 @@
     // the street: the nearest named road or path within reach, from OpenStreetMap; the suburb: the nearest suburb label
     const sgrid = new Map(), SC = 60;
     let streetNames = [];
-    fetch('streets.json').then((r) => (r.ok ? r.json() : null)).then((sj) => {
+    fetch(LEVEL.streets || 'streets.json').then((r) => (r.ok ? r.json() : null)).then((sj) => {
       if (!sj) return;
       streetNames = sj.names;
       for (const [ni, ...a] of sj.ways)
@@ -829,6 +928,7 @@
         }
     }).catch(() => {});
     const suburbs = (data.labels || []).filter((l) => l[4] === 'suburb' || l[4] === 'centre');
+    const places = (data.labels || []).filter((l) => l[4] === 'place' && !/Bridge$/.test(l[0])); // parks and landmarks: shown when the ball is near
     function whereAmI() {
       let best = null, bd = (r + 35) ** 2;
       const gi = Math.floor(px / SC), gj = Math.floor(pz / SC), k = Math.ceil((r + 35) / SC);
@@ -840,6 +940,7 @@
         }
       let sub = null, sd = Infinity;
       for (const [name, x, z] of suburbs) { const d = Math.hypot(x - px, z - pz); if (d < sd) (sd = d), (sub = name); }
+      for (const [name, x, z] of places) if (Math.hypot(x - px, z - pz) < 260 + r) { sub = name; break; }
       if (wet(px, pz)) best = 'Brisbane River';
       const html = best ? `${best}<small>${sub ?? ''}</small>` : `${sub ?? 'Brisbane'}`;
       if (streetEl.innerHTML !== html) streetEl.innerHTML = html;
@@ -863,7 +964,7 @@
     };
     function step(dt) {
       if (!dt) return;
-      clock += dt;
+      if (!paused) clock += dt;
       // input: forward/back along the camera's view, turning swings the camera round
       let f = (keys.has('f') ? 1 : 0) - (keys.has('b') ? 1 : 0), turn = (keys.has('l') ? 1 : 0) - (keys.has('r') ? 1 : 0);
       turn += (keys.has('ol') ? 1 : 0) - (keys.has('or') ? 1 : 0);
@@ -871,10 +972,13 @@
       if (keys.has('zi')) zoom = Math.max(0.5, zoom * Math.exp(-1.5 * dt));
       if (keys.has('zo')) zoom = Math.min(5, zoom * Math.exp(1.5 * dt));
       if (drag) { f = Math.max(-1, Math.min(1, -drag.dy / 90)); turn = Math.max(-1, Math.min(1, -drag.dx / 110)); }
+      if (paused) f = turn = 0;
       if (f || turn) help.style.opacity = 0;
       az = (az + turn * 105 * dt + 360) % 360;
       const ar = (az * Math.PI) / 180, fx = -Math.sin(ar), fz = -Math.cos(ar);
-      const vmax = 5 + 1.8 * r, k = Math.min(1, 2.2 * dt);
+      // in the rain the roads are slippery: the ball takes longer to speed up, slow down and turn its run
+      const slick = (window.__liveSky?.weather?.precip ?? 0) > 0.1 ? 0.4 : 1;
+      const vmax = 5 + 1.8 * r, k = Math.min(1, 2.2 * dt * slick);
       vx += (f * vmax * fx - vx) * (f ? k : k * 0.5);
       vz += (f * vmax * fz - vz) * (f ? k : k * 0.5);
       // hills: it runs downhill, and slows climbing
@@ -889,7 +993,9 @@
       px = nx; pz = nz;
       walk(dt);
       animals(dt);
+      updateLoose(dt);
       pickAll();
+      emit('frame', { dt, speed: Math.hypot(vx, vz), r, x: px, z: pz, clock });
       // roll: about the axis across the motion, by the distance over the radius
       const dist = Math.hypot(mx, mz);
       if (dist > 1e-4) rotate(mz / dist, 0, -mx / dist, dist / r);
@@ -942,17 +1048,21 @@
       // the HUD
       const size = 2 * r;
       while (goal < GOALS.length && size >= GOALS[goal]) {
-        say(`${GOALS[goal]} m across`, `${GOALS[goal]} m!<small>${GOAL_NOTES[goal]}</small>`);
+        if (!LEVEL.quietGoals) say(`${GOALS[goal]} m across`, `${GOALS[goal]} m!<small>${GOAL_NOTES[goal]}</small>`);
+        emit('goal', { size: GOALS[goal] });
         goal++;
       }
       hud.querySelector('.size').textContent = fmt(size);
-      hud.querySelector('.meta').textContent = `${things.toLocaleString()} things rolled up · ${mmss(clock)}`;
-      hud.querySelector('.goal').textContent = goal < GOALS.length ? `Next: ${GOALS[goal]} m across` : finished ? 'Brisbane is rolled up' : 'Roll up the Skytower';
+      hud.querySelector('.meta').textContent = `${things.toLocaleString()} things rolled up · ${window.__rollGame?.clockText?.() ?? mmss(clock)}`;
+      hud.querySelector('.goal').textContent = window.__rollGame?.goalText?.() ??
+        (goal < GOALS.length ? `Next: ${GOALS[goal]} m across` : finished ? 'Brisbane is rolled up' : 'Roll up the Skytower');
       if (clock - toastAt > 1.6) toast.classList.remove('on');
       if (clock - bannerAt > (finished ? 9 : 3.2)) banner.classList.remove('on');
     }
 
     window.__roll = { get r() { return r; }, get pos() { return [px, py, pz]; }, set pos([x, z]) { px = x; pz = z; }, stats, keys, fauna,
+      on, say, markers, toXZ, get clock() { return clock; }, get things() { return things; }, get paused() { return paused; }, set paused(v) { paused = v; },
+      bonus: (vol) => grow(vol), get volume() { return r ** 3 / 0.239; }, level: LEVEL, loose, crash: (speed = 15) => crash(speed, 0, 1),
       grow: (m) => { r = m; }, get az() { return az; }, set az(a) { az = a; } };
     hud.querySelector('.meta').textContent = '0 things rolled up · 0:00';
     city.view.span = 32;
