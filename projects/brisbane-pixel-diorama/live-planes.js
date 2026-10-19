@@ -249,7 +249,8 @@
       D.requestRender?.();
     }
     function caption() {
-      const over = drawn.filter((p) => Math.hypot(p.x - ccx, p.z - ccz) <= data.circle[2]).length;
+      // counted from the latest fixes (the drawn list is empty until the first frame after the first answer)
+      const over = [...planes.values()].filter((p) => { const f = p.fixes.at(-1); return Math.hypot(f.x - ccx, f.z - ccz) <= data.circle[2]; }).length;
       const what = GROUND ? 'none at the airport right now' : 'none over the map right now';
       const a = document.createElement('a');
       a.href = source.link || 'https://adsb.fi/';
