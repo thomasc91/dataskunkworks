@@ -162,7 +162,18 @@
       // Tunnels aren't drawn, and bridges are the model's own decks, except a few short ones it has no deck for.
       const deck = (a, b) => T && T.deckAt((N[a][0] + N[b][0]) / 2, (N[a][1] + N[b][1]) / 2) != null;
       const ground_ = E.filter(([a, b, f]) => !(f & 2) && !(f & 1 && deck(a, b)));
-      const segs = (w) => ground_.map(([a, b]) => [w, [N[a][0], N[a][1], N[b][0], N[b][1]]]);
+      // The graph runs 400 m past the map's edge so trains glide in from off the map, but the track drawn stops at
+      // the edge (less half the ballast's width), where the ground does.
+      const RIM = cr - 2.5;
+      const clip = (ax, az, bx, bz) => {
+        const dx = bx - ax, dz = bz - az, fx = ax - ccx, fz = az - ccz;
+        const A = dx * dx + dz * dz, B = 2 * (fx * dx + fz * dz), C = fx * fx + fz * fz - RIM * RIM, disc = B * B - 4 * A * C;
+        if (!A || disc <= 0) return C <= 0 ? [ax, az, bx, bz] : null;
+        const q = Math.sqrt(disc), t0 = Math.max(0, (-B - q) / (2 * A)), t1 = Math.min(1, (-B + q) / (2 * A));
+        return t1 > t0 ? [ax + dx * t0, az + dz * t0, ax + dx * t1, az + dz * t1] : null;
+      };
+      const inside = ground_.map(([a, b]) => clip(N[a][0], N[a][1], N[b][0], N[b][1])).filter(Boolean);
+      const segs = (w) => inside.map((s) => [w, s]);
       const ribbon = (list) => {
         if (T) return T.roads(list);
         const out = [];
