@@ -1,6 +1,6 @@
 // Roll mode's sounds, made in the browser with WebAudio: no sound files. Added 20 Oct 2026.
 //
-// A rumble under the ball that rises with its speed; a blip for each thing it picks up, lower for bigger things; a
+// A blip for each thing the ball picks up, lower for bigger things (a rolling rumble was tried and taken out, 20 Oct); a
 // thud for a bump and a clatter when a crash knocks things loose; a magpie's warble when one swoops; chimes for
 // combos, bonuses and new things in the collection; and a fanfare at the end of a level. Browsers only allow sound
 // after a click or key, so it starts on the first one. The Sound button or M mutes it (remembered on this device).
@@ -8,7 +8,7 @@
   if (new URLSearchParams(location.search).get('mode') !== 'roll') return;
   let muted = false;
   try { muted = localStorage.getItem('roll-muted') === '1'; } catch { /* private window */ }
-  let ctx = null, master = null, rumbleGain = null, rumbleFilter = null;
+  let ctx = null, master = null;
   function ensure() {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
@@ -17,16 +17,6 @@
       master = ctx.createGain();
       master.gain.value = muted ? 0 : 0.45;
       master.connect(ctx.destination);
-      // the rumble: looped brown noise through a low-pass filter
-      const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
-      let last = 0;
-      for (let i = 0; i < len; i++) { last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = last * 3.5; }
-      const src = ctx.createBufferSource();
-      src.buffer = buf; src.loop = true;
-      rumbleFilter = ctx.createBiquadFilter(); rumbleFilter.type = 'lowpass'; rumbleFilter.frequency.value = 200;
-      rumbleGain = ctx.createGain(); rumbleGain.gain.value = 0;
-      src.connect(rumbleFilter).connect(rumbleGain).connect(master);
-      src.start();
     }
     if (ctx.state === 'suspended') ctx.resume();
   }
@@ -102,11 +92,5 @@
     R.on('drop', (e) => SOUNDS.drop(e));
     R.on('swooped', () => SOUNDS.swooped());
     R.on('goal', () => SOUNDS.goal());
-    R.on('frame', (e) => { // the rumble follows the ball's speed, deeper as it grows
-      if (!ctx || !rumbleGain) return;
-      const v = Math.min(1, e.speed / (5 + 1.8 * e.r));
-      rumbleGain.gain.setTargetAtTime(muted || R.paused ? 0 : v * 0.5, ctx.currentTime, 0.08);
-      rumbleFilter.frequency.setTargetAtTime(Math.max(60, 380 - 40 * Math.log2(1 + e.r)) * (0.6 + v), ctx.currentTime, 0.1);
-    });
   }, 200);
 })();

@@ -191,6 +191,29 @@
         for (let j = Math.floor(z0 / CELL); j <= Math.floor(z1 / CELL); j++) { const k = key(i, j); let a = bgrid.get(k); if (!a) bgrid.set(k, (a = [])); a.push(p); }
     }
     // trees: straight from the renderer's instanced trees
+    // hand-built landmarks (landmarks.js): rolled up like buildings once they're built, from their footprints; one
+    // that stands on a building's roof (the XXXX sign) goes with that building
+    const lmByBid = new Map();
+    let lmAdded = false;
+    function addLandmarks() {
+      const items = window.__landmarks?.items;
+      if (lmAdded || !items) return;
+      lmAdded = true;
+      items.forEach((it, i) => {
+        if (it.bid != null) { if (!lmByBid.has(it.bid)) lmByBid.set(it.bid, []); lmByBid.get(it.bid).push(it); return; }
+        const pts = it.pts, n = pts.length / 2;
+        let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, cx = 0, cz = 0;
+        for (let q = 0; q < n; q++) {
+          const x = pts[2 * q], z = pts[2 * q + 1];
+          x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); cx += x; cz += z;
+        }
+        const p = { bid: -1 - i, extra: it, pts, x0, x1, z0, z1, cx: cx / n, cz: cz / n, H: it.H, w: x1 - x0, d: z1 - z0,
+          size: Math.max(it.H, 0.55 * Math.max(x1 - x0, z1 - z0)), vol: it.vol, gone: false };
+        parts.push(p);
+        for (let a = Math.floor(x0 / CELL); a <= Math.floor(x1 / CELL); a++)
+          for (let b = Math.floor(z0 / CELL); b <= Math.floor(z1 / CELL); b++) { const k = key(a, b); let l = bgrid.get(k); if (!l) bgrid.set(k, (l = [])); l.push(p); }
+      });
+    }
     const tgrid = new Map(), trees = [];
     (city.treeMeshes || []).forEach((m, mi) => {
       const a = m.instanceMatrix.array;
@@ -562,6 +585,15 @@
         if (!best || size > best.size) best = { name, size };
         emit('pick', { name, size, key, ...extra });
       };
+      addLandmarks();
+      const takeLandmark = (it, p) => {
+        if (it.gone) return;
+        it.hide();
+        stick('box', p.cx, ground(p.cx, p.cz) + it.H / 2, p.cz, [Math.max(2, p.w * 0.9), Math.max(2, it.H), Math.max(2, p.d * 0.9)], it.colour || [1, 1, 1], it.vol, it.label, it.key);
+        grow(it.vol);
+        note(it.label, (p.extra ? p.size : it.H) + 30, it.key, { landmark: it.name });
+        stats.names.push(it.name); stats.building++;
+      };
       // people
       if (cap >= PH) for (const q of people) {
         if (q.gone || picksThisFrame > 150 || Math.abs(q.x - px) > reach + 2 || Math.abs(q.z - pz) > reach + 2) continue;
@@ -712,9 +744,11 @@
       // buildings: pick up the small ones, bounce off the big ones
       near(bgrid, px, pz, reach + 30, (p) => {
         if (p.gone || p.x1 < px - reach || p.x0 > px + reach || p.z1 < pz - reach || p.z0 > pz + reach) return;
+        if (p.extra?.thin && p.size > cap) return; // it rolls under the Grand Arbour until it's big enough to take it
         const [qx, qz, inside] = closest(p, px, pz), d = Math.hypot(px - qx, pz - qz);
         if (!inside && d > r * 0.92) return;
         if (p.size <= cap) {
+          if (p.extra) { p.gone = true; takeLandmark(p.extra, p); return; }
           const all = byBid.get(p.bid);
           let vol = 0, H = 0;
           for (const q of all) { q.gone = true; vol += q.vol; H = Math.max(H, q.H); }
@@ -727,6 +761,7 @@
           const name = named ? (tall > 40 ? `${named} (${Math.round(tall)} m)` : named) : TYPES[info[1]] || 'a building';
           note(name, p.size + (named ? 30 : 0), named ? 'landmark:' + named : 'building', { landmark: named || null });
           if (named) stats.names.push(named);
+          for (const it of lmByBid.get(p.bid) || []) takeLandmark(it, p);
           if (named === (LEVEL.finishOn ?? 'Brisbane Skytower') && !finished) finish();
         } else {
           // too big: push the ball out and bounce it back

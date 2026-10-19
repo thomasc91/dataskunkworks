@@ -71,7 +71,7 @@
           "h": "How it was made",
           "p": [
             "The model is one data file: 57,008 building footprints with heights, the trees, 14,304 road segments, the parks and the river, all clipped to a circle 5 km around West End. three.js draws it in WebGL, and the pixel finish, labels and traffic can each be switched off.",
-            "The ground follows Queensland's bare-earth LiDAR elevation model, sampled every 10 m, so Mt Coot-tha and the inner-city hills rise out of the map. The river bridges are hand-built models drawn from published dimensions and photos.",
+            "The ground follows Queensland's bare-earth LiDAR elevation model, sampled every 10 m, so Mt Coot-tha and the inner-city hills rise out of the map. The river bridges and landmarks such as the Wheel of Brisbane, the Brisbane sign and the Gabba are hand-built models drawn from published dimensions and photos.",
             "The railway comes from OpenStreetMap, and each train follows the track between its GPS fixes, through the junctions, over the bridges and into the tunnels.",
             "The live ferries, trains, buses and planes come through a small relay on Cloudflare, which fetches each feed every few seconds and shares it with everyone who has the map open.",
             "It was built with Claude in October 2026."

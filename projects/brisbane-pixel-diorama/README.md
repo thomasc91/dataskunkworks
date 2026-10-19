@@ -1,6 +1,6 @@
 # Brisbane pixel diorama
 
-A 3D pixel-art model of everything within 5 km of West End, Brisbane: the CBD, Eagle Street, the river and the inner suburbs. Drag to orbit, scroll to zoom, hover or click a building for its height and floors, and hover a ferry, train, bus, ship or plane to see what it is. The ground follows the real terrain, the river bridges are hand-built models, and the CityCats, ferries, trains, buses, Metro and planes are live. The cars are simulated at live traffic levels and the cyclists from the council's bike counts. In daylight the sun and the weather follow the real time in Brisbane. Buildings and hills are drawn 1.6× taller, and the photo view frames Eagle Street.
+A 3D pixel-art model of everything within 5 km of West End, Brisbane: the CBD, Eagle Street, the river and the inner suburbs. Drag to orbit, scroll to zoom, hover or click a building for its height and floors, and hover a ferry, train, bus, ship or plane to see what it is. The ground follows the real terrain, the river bridges and landmarks such as the Wheel of Brisbane, the Brisbane sign and the Gabba are hand-built models, and the CityCats, ferries, trains, buses, Metro and planes are live. The cars are simulated at live traffic levels and the cyclists from the council's bike counts. In daylight the sun and the weather follow the real time in Brisbane. Buildings and hills are drawn 1.6× taller, and the photo view frames Eagle Street.
 
 Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferries, trains, buses and planes, traffic levels, cyclists, ships and the real sun and weather were added on 19 October.
 
@@ -14,6 +14,7 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferrie
 | `terrain.js`, `terrain.json`, `terrain.bin` | The ground: a 10 m height grid (3 MB) and where everything sits on it |
 | `bridges.js`, `bridges.json` | Hand-built models of 14 river bridges, and which of the map's bridges each one replaces |
 | `ferry-terminals.js`, `terminals.json` | The 17 ferry terminals on their real outlines, and the hover cards |
+| `landmarks.js`, `landmarks.json` | Hand-built landmarks, and where each one goes |
 | `live-config.js`, `live-ferries.js`, `live-trains.js`, `live-planes.js` | The live ferries, trains and planes, and which relay they read |
 | `rail.json` | The railway: 115 km of track and the station platforms, and TransLink's stop ids for naming each train's next stop |
 | `live-graph.js` | Following the tracks and roads between GPS fixes, for the trains and buses |
@@ -48,6 +49,10 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 - **Cyclists:** riders on 190 km of bikeways, as many as the council's 12 bike counters in the map count on that day of the week (October and November 2025, the latest published), spread over the day with commuting peaks, at about 20 km/h. About 350 ride at 7:30am on a weekday. Half stay home in the rain.
 - **The sun and weather:** the Now button keeps the slider at the time in Brisbane, with the sun where it really is today. The weather is Open-Meteo's for Brisbane now: cloud dims the light, rain falls, and the toolbar shows the temperature and sky. After dark the map shows the afternoon.
 
+## Landmarks
+
+Besides the 14 river bridges, some landmarks are hand-built on their real places: the Wheel of Brisbane, whose rim turns while the traffic runs; the Brisbane sign at the Cultural Forecourt; the Nepalese Peace Pagoda; the Shrine of Remembrance and its eternal flame; the XXXX sign on the brewery at Milton; the Grand Arbour's bougainvillea; Streets Beach; and the Gabba and Suncorp Stadium as open bowls with their pitches, in place of the solid blocks the map had. Roll mode can roll them all up.
+
 ## Roll mode
 
 The Roll button turns the map into a Katamari Damacy-style game. You push a sticky ball round Brisbane, starting on Boundary Street in West End, and anything smaller than it sticks to it: people, street furniture, ibis, cane toads, magpies and kangaroos first, then cars and trees, houses, CityCats, apartment blocks, the CBD towers and finally the Brisbane Skytower. Bigger things bounce it back, magpies swoop it while it's small, kangaroos bolt, and the river stops it until it's 80 m across. Use the arrow keys or WASD, or drag on a touch screen; scroll or pinch to zoom and right-drag to look round. A minimap shows the streets round the ball and the street it's on. Everything it rolls up stays gone until the page reloads.
@@ -70,7 +75,7 @@ Then open http://localhost:8000/. The fonts come from Google Fonts; offline, it 
 
 ## Data
 
-- Buildings, streets, parks, the railway, bus routes, bikeways, bridge outlines and ferry terminals © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.
+- Buildings, streets, parks, the railway, bus routes, bikeways, bridge outlines, ferry terminals and the landmarks' places © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.
 - Elevation: Queensland DEM (QldDem), CC BY-SA. Includes material © State of Queensland (Department of Natural Resources and Mines, Manufacturing, and Regional and Rural Development); © Commonwealth of Australia (Geoscience Australia, The Australian Hydrographic Office); © www.deepreef.org 2025. The height grid in `terrain.bin` is shared under the same licence.
 - Ferry, train and bus positions: TransLink SEQ GTFS-RT, CC BY 4.0.
 - Bus stop names, traffic signal data and bike counts: Brisbane City Council open data, CC BY 4.0.

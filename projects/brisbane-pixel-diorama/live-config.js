@@ -1,14 +1,11 @@
-// Where the live layers (live-ferries.js, live-trains.js, live-buses.js, live-planes.js) get their data. On Thomas's PC that's the
-// local relay, live/ferry_relay.py on port 4011, which the local apps hub runs. Anywhere else (GitHub Pages, a Claude
-// artifact) it's the public relay, live/worker.js on Cloudflare. ?live=<url> points them all at another relay, and
+// Where the live layers (live-ferries.js, live-trains.js, live-buses.js, live-planes.js) get their data: the public relay,
+// live/worker.js on Cloudflare, everywhere, Thomas's PC included (since 20 Oct 2026; before that the PC read the local
+// relay, live/ferry_relay.py, which still runs by hand: ?live=http://localhost:4011). ?live=<url> points them all at another relay, and
 // ?ferries=off, ?buses=off or ?planes=off keeps that layer simulated (?trains=off leaves the trains out).
 // Roll mode's best times always go to the public relay, so everyone's are on one board.
 window.__scoresUrl = 'https://brisbane-diorama-live.thomas-a-colin.workers.dev';
 
-window.__liveRelay = new URLSearchParams(location.search).get('live') ||
-  (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)
-    ? 'http://localhost:4011'
-    : 'https://brisbane-diorama-live.thomas-a-colin.workers.dev');
+window.__liveRelay = new URLSearchParams(location.search).get('live') || 'https://brisbane-diorama-live.thomas-a-colin.workers.dev';
 
 // The header's line about what's simulated, kept true as each live layer comes and goes.
 (() => {
