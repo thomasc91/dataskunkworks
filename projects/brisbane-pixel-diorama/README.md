@@ -22,7 +22,7 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferrie
 | `live-cyclists.js`, `cycling.json` | The cyclists, 190 km of bikeways and the council's bike counts |
 | `live-sky.js` | The real sun and the weather |
 | `live-ships.js` | The live ships |
-| `roll.js`, `props.json` | Roll mode, and the 9,484 bits of street furniture it starts on |
+| `roll.js`, `props.json`, `streets.json` | Roll mode, the 9,484 bits of street furniture it starts on, and the street names under its minimap |
 | `airport.html`, `airport.json` | A second map: everything within 4.5 km of Brisbane Airport (1.8 MB) |
 | `airport.js`, `airport-features.json` | The airfield: runways with their markings, taxiways and aprons |
 
@@ -48,7 +48,7 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 
 ## Roll mode
 
-The Roll button turns the map into a Katamari Damacy-style game. You push a sticky ball round Brisbane, starting on Boundary Street in West End, and anything smaller than it sticks to it: people and street furniture first, then cars and trees, houses, apartment blocks, the CBD towers and finally the Brisbane Skytower. Bigger things bounce it back, and the river stops it until it's 80 m across. Use the arrow keys or WASD, or drag on a touch screen. Everything it rolls up stays gone until the page reloads.
+The Roll button turns the map into a Katamari Damacy-style game. You push a sticky ball round Brisbane, starting on Boundary Street in West End, and anything smaller than it sticks to it: people, street furniture, ibis, cane toads, magpies and kangaroos first, then cars and trees, houses, CityCats, apartment blocks, the CBD towers and finally the Brisbane Skytower. Bigger things bounce it back, magpies swoop it while it's small, kangaroos bolt, and the river stops it until it's 80 m across. Use the arrow keys or WASD, or drag on a touch screen; scroll or pinch to zoom and right-drag to look round. A minimap shows the streets round the ball and the street it's on. Everything it rolls up stays gone until the page reloads.
 
 ## Brisbane Airport
 

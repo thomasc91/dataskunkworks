@@ -127,7 +127,7 @@
     }
 
     const p0 = [0, 0], p1 = [0, 0], pc = [0, 0];
-    const drawn = []; // what's on screen this frame, for the tooltips: {name, route, x, z, status, stop}
+    const drawn = [], gone = new Set(); // drawn: what's on screen this frame, for the tooltips; gone: rolled up in roll mode
     function fixAt(b, t) { // the latest fix at or before t: its status is the boat's status then
       let f = b.fixes[0];
       for (const g of b.fixes) if (g.t <= t) f = g;
@@ -139,6 +139,7 @@
       let k = 0;
       drawn.length = 0;
       for (const b of boats.values()) {
+        if (gone.has(b)) continue;
         if (k >= CAP || !posAt(b, t, pc)) continue;
         if (Math.hypot(pc[0] - ccx, pc[1] - ccz) > cr) continue; // off the model
         posAt(b, t - 1, p0); posAt(b, t + 1, p1);
@@ -163,7 +164,7 @@
           W.set([w * M, 0, v * M, 0, 0, 1, 0, 0, -v * Cw, 0, w * Cw, 0, bx, WATER + 0.04, bz, 1], k * 16);
         }
         const f = fixAt(b, t);
-        drawn.push({ name: b.name, route: b.route, x: pc[0], z: pc[1], status: f.status, stop: f.stop });
+        drawn.push({ b, name: b.name, route: b.route, x: pc[0], z: pc[1], status: f.status, stop: f.stop });
         k++;
       }
       hull.count = wake.count = k;
@@ -214,7 +215,7 @@
       }
     }
     document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
-    window.__liveFerries = { boats, drawn, get live() { return live; }, get shown() { return shown; }, relay: RELAY };
+    window.__liveFerries = { boats, drawn, gone, get live() { return live; }, get shown() { return shown; }, relay: RELAY };
     poll();
   }
 

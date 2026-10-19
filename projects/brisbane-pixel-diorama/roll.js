@@ -6,12 +6,17 @@
 // and the Valley) and the benches, bins and picnic tables (OpenStreetMap's street furniture, props.json from
 // roll/build_props.py). Both are drawn only in this mode. At 6 m it takes cars, cyclists and small trees, at about 20 m
 // houses, at 150 to 250 m the CBD towers, and at about 400 m the Brisbane Skytower.
-// The river stops it until it's 80 m across, then it wades. Everything it picks up stays gone until the page reloads:
-// the buildings (hidden by id in the renderer's shader, shadows and edge lines too), the trees, the simulated cars,
-// the cyclists, and the live buses, Metro and trains.
+// Wildlife lives in the parks: ibis (round the bins too), cane toads, magpies, which swoop a small ball (it's
+// swooping season), and mobs of kangaroos, which bolt when it comes near. CityCats can be rolled up from the bank
+// once the ball is about 23 m across. The river stops it until it's 80 m across, then it wades. Everything it picks
+// up stays gone until the page reloads: the buildings (hidden by id in the renderer's shader, shadows and edge lines
+// too), the trees, the simulated cars, the cyclists, the animals, and the live buses, Metro, trains and CityCats.
 //
 // Arrow keys or WASD: up rolls forward, down rolls back, left and right turn (the camera follows behind). On a touch
-// screen or with the mouse, drag: up and down to roll, sideways to turn. Esc or "Back to the map" leaves.
+// screen or with the mouse, drag: up and down to roll, sideways to turn. The camera: scroll or + and - to zoom,
+// right-drag or Q, E, R and F to look around, pinch on a touch screen. A minimap shows the streets round the ball,
+// with the street it's on and the suburb (street names from OpenStreetMap: streets.json, roll/build_streets.py).
+// Esc or "Back to the map" leaves.
 (() => {
   const Q = new URLSearchParams(location.search);
   const rolling = Q.get('mode') === 'roll';
@@ -43,6 +48,15 @@
     fire_hydrant: [0.2, 0.9, 0.2, '#f4f4f0', 'a hydrant marker'],
   };
   const PROP_SCALE = 1.4, PROP_GROW = 3; // drawn a little bigger than life, and worth more, so the start isn't slow
+  // Wildlife: how many, real length and height (m), walking and fleeing speeds (m/s), how near the ball sends them off,
+  // drawn scale, worth (m³ of growth), and what the toast calls them. Magpies swoop instead of fleeing.
+  const MAGPIE_CATCH = 2.5; // m: the radius from which the ball can catch a magpie mid-swoop (until then it gets knocked about)
+  const FAUNA = {
+    ibis: { n: 700, len: 0.75, tall: 0.78, walk: 0.45, flee: 2.4, fear: 5, scale: 1.6, worth: 1.5, label: 'an ibis' },
+    toad: { n: 900, len: 0.2, tall: 0.12, walk: 0.15, flee: 1.1, fear: 2.5, hop: 0.22, scale: 2.4, worth: 0.25, label: 'a cane toad' },
+    magpie: { n: 450, len: 0.42, tall: 0.32, walk: 0.5, flee: 0, fear: 0, scale: 1.8, worth: 0.4, label: 'a magpie' },
+    roo: { n: 160, len: 1.4, tall: 1.6, walk: 0.35, flee: 7, fear: 18, hop: 0.9, scale: 1.4, worth: 6, label: 'a kangaroo', mob: 7 },
+  };
   const TYPES = { house: 'a house', detached: 'a house', residential: 'a house', semidetached_house: 'a house', terrace: 'a terrace',
     apartments: 'an apartment block', retail: 'a shop', commercial: 'an office block', office: 'an office block', garage: 'a garage',
     garages: 'some garages', roof: 'a shelter', shed: 'a shed', school: 'a school building', carport: 'a carport', church: 'a church',
@@ -70,11 +84,18 @@
     #rollExit { position: fixed; top: 14px; right: 14px; z-index: 40; height: 36px; padding: 0 12px; border: 0; border-radius: 9px;
       background: var(--panel); color: var(--ink); font: 600 13px 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer;
       box-shadow: 0 2px 0 var(--shadow, rgba(0,0,0,.15)); }
-    #rollHelp { position: fixed; bottom: 42px; left: 50%; transform: translateX(-50%); z-index: 40; pointer-events: none; text-align: center;
+    #rollHelp { position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%); z-index: 40; pointer-events: none; text-align: center;
       font: 600 13px/1.4 'Hanken Grotesk', system-ui, sans-serif; color: var(--muted); background: color-mix(in srgb, var(--panel) 88%, transparent);
       border-radius: 9px; padding: 6px 12px; max-width: calc(100vw - 32px); transition: opacity .6s; }
+    #rollMap { position: fixed; left: 14px; bottom: 58px; z-index: 40; pointer-events: none; text-align: center; }
+    #rollMap canvas { display: block; width: 190px; height: 190px; border-radius: 50%; box-shadow: 0 2px 0 var(--shadow, rgba(0,0,0,.15)), 0 0 0 3px var(--panel); }
+    #rollMap .street { margin-top: 8px; max-width: 220px; font: 700 13px/1.3 'Hanken Grotesk', system-ui, sans-serif; color: var(--ink);
+      background: color-mix(in srgb, var(--panel) 92%, transparent); border-radius: 8px; padding: 4px 9px; display: inline-block; }
+    #rollMap .street small { display: block; font-weight: 500; color: var(--muted); }
     @media (max-width: 560px) { #rollHud { top: 10px; min-width: 0; padding: 6px 12px; } #rollHud .size { font-size: 24px; }
-      #rollExit { top: 10px; left: 10px; right: auto; } #rollToast { top: 92px; } #rollHelp { bottom: 112px; } }
+      #rollExit { top: 10px; left: 10px; right: auto; } #rollToast { top: 92px; } #rollHelp { bottom: 112px; }
+      #rollMap { left: auto; right: 10px; top: 10px; bottom: auto; } #rollMap canvas { width: 92px; height: 92px; }
+      #rollMap .street { max-width: 120px; font-size: 11px; margin-top: 5px; } }
   `;
   document.head.append(css);
   document.body.classList.add('rolling');
@@ -86,8 +107,9 @@
   exit.addEventListener('click', () => go(false));
   const touch = matchMedia('(pointer: coarse)').matches;
   exit.textContent = innerWidth <= 560 ? 'Map' : 'Back to the map';
-  const help = el('div', 'rollHelp', touch ? 'Drag up to roll, and sideways to turn. Anything smaller than the ball sticks to it.'
-    : 'Arrow keys or WASD to roll and turn, or drag. Anything smaller than the ball sticks to it.');
+  const help = el('div', 'rollHelp', touch ? 'Drag up to roll, and sideways to turn; pinch to zoom. Anything smaller than the ball sticks to it.'
+    : 'Arrow keys or WASD to roll and turn, or drag. Scroll to zoom, right-drag to look round. Anything smaller than the ball sticks to it.');
+  const mapBox = el('div', 'rollMap', '<canvas width="380" height="380"></canvas><div class="street"></div>');
 
   async function start() {
     const D = window.__dio, K = window.__terrain?.K, { city, data, life } = D;
@@ -250,6 +272,115 @@
       crowdMesh.instanceMatrix.needsUpdate = true;
     }
 
+    // --- Wildlife: ibis, cane toads, magpies and kangaroos in the parks ---------------------------------------------
+    const ground = (x, z) => (T ? T.h(x, z) : 0);
+    const wet = (x, z) => !!(T && T.inWater(x, z));
+    const ring0 = (g) => (typeof g[0] === 'number' ? g : g[0]);
+    const inPoly = (a, x, z) => { let c = false; for (let i = 0, j = a.length - 2; i < a.length; j = i, i += 2) if ((a[i + 1] > z) !== (a[j + 1] > z) && x < ((a[j] - a[i]) * (z - a[i + 1])) / (a[j + 1] - a[i + 1]) + a[i]) c = !c; return c; };
+    const startXZ = toXZ(...START);
+    const parks = (data.green || []).map((g) => {
+      const a = ring0(g);
+      let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, area = 0;
+      for (let i = 0; i < a.length; i += 2) { x0 = Math.min(x0, a[i]); x1 = Math.max(x1, a[i]); z0 = Math.min(z0, a[i + 1]); z1 = Math.max(z1, a[i + 1]); }
+      for (let i = 0, j = a.length - 2; i < a.length; j = i, i += 2) area += a[j] * a[i + 1] - a[i] * a[j + 1];
+      const near = Math.hypot((x0 + x1) / 2 - startXZ[0], (z0 + z1) / 2 - startXZ[1]);
+      return { a, x0, x1, z0, z1, area: Math.abs(area) / 2, w: Math.min(Math.abs(area) / 2, 250000) * (0.3 + 3 * Math.exp(-near / 2500)) };
+    }).filter((q) => q.area > 800);
+    const pickPark = (list) => { let u = Math.random() * list.reduce((s, q) => s + q.w, 0); for (const q of list) if ((u -= q.w) <= 0) return q; return list[0]; };
+    const spotIn = (q) => {
+      for (let k = 0; k < 30; k++) {
+        const x = q.x0 + Math.random() * (q.x1 - q.x0), z = q.z0 + Math.random() * (q.z1 - q.z0);
+        if (inPoly(q.a, x, z) && !wet(x, z)) return [x, z];
+      }
+      return null;
+    };
+    const fauna = []; // {kind, x, z, y, h, home, ...}
+    const bins = props.filter((p) => /a bin|recycling/.test(p.name));
+    const bigParks = parks.filter((q) => q.area > 120000);
+    for (const [kind, spec] of Object.entries(FAUNA)) {
+      for (let n = 0; n < spec.n; ) {
+        let at = null;
+        if (kind === 'ibis' && bins.length && Math.random() < 0.4) { const b = bins[(Math.random() * bins.length) | 0]; at = [b.x + (Math.random() - 0.5) * 8, b.z + (Math.random() - 0.5) * 8]; }
+        else at = spotIn(pickPark(kind === 'roo' && bigParks.length ? bigParks : parks));
+        if (!at || wet(...at)) continue;
+        const group = kind === 'roo' ? spec.mob : 1;
+        for (let g = 0; g < group && n < spec.n; g++, n++) {
+          const x = at[0] + (g ? (Math.random() - 0.5) * 30 : 0), z = at[1] + (g ? (Math.random() - 0.5) * 30 : 0);
+          fauna.push({ kind, spec, x, z, y: 0, h: Math.random() * 6.28, home: [x, z], t: Math.random() * 3, moving: false, phase: Math.random() * 6.28,
+            gone: false, state: 'ground', cool: 5 + Math.random() * 20, size: Math.max(spec.len, spec.tall) * spec.scale });
+        }
+      }
+    }
+    const faunaGeo = {
+      ibis: boxes([[-0.25, 0.35, -0.12, 0.2, 0.6, 0.12, '#f1efe8'], [-0.33, 0.38, -0.1, -0.2, 0.5, 0.1, '#2a2a2a'], [0.14, 0.5, -0.04, 0.24, 0.74, 0.04, '#232323'],
+        [0.19, 0.66, -0.05, 0.3, 0.78, 0.05, '#1c1c1c'], [0.3, 0.6, -0.02, 0.5, 0.66, 0.02, '#1c1c1c'], [-0.05, 0, -0.08, 0.0, 0.36, -0.04, '#2a2a2a'], [-0.05, 0, 0.04, 0.0, 0.36, 0.08, '#2a2a2a']]),
+      toad: boxes([[-0.1, 0.0, -0.075, 0.09, 0.09, 0.075, '#7a6a3a'], [0.07, 0.01, -0.055, 0.13, 0.08, 0.055, '#6d5e33'], [-0.06, 0.07, -0.05, 0.04, 0.115, 0.05, '#5f5230'],
+        [-0.12, 0, -0.1, -0.04, 0.03, -0.07, '#8a7a48'], [-0.12, 0, 0.07, -0.04, 0.03, 0.1, '#8a7a48']]),
+      magpie: boxes([[-0.15, 0.12, -0.06, 0.12, 0.26, 0.06, '#151515'], [-0.02, 0.22, -0.056, 0.08, 0.27, 0.056, '#f4f4f0'], [-0.1, 0.16, -0.066, 0.02, 0.22, 0.066, '#f4f4f0'],
+        [0.1, 0.2, -0.045, 0.18, 0.3, 0.045, '#111111'], [0.18, 0.23, -0.015, 0.25, 0.26, 0.015, '#9aa0a4'], [-0.29, 0.16, -0.04, -0.15, 0.21, 0.04, '#151515'],
+        [-0.02, 0, -0.03, 0.01, 0.13, -0.015, '#222222'], [-0.02, 0, 0.015, 0.01, 0.13, 0.03, '#222222']]),
+      roo: boxes([[-0.25, 0, -0.18, 0.15, 0.5, 0.18, '#8a6f55'], [0.0, 0, -0.1, 0.38, 0.07, 0.1, '#6f5a45'], [-0.95, 0.1, -0.08, -0.25, 0.3, 0.08, '#8a6f55'],
+        [-0.28, 0.45, -0.2, 0.2, 1.05, 0.2, '#9b8064'], [0.05, 0.75, -0.15, 0.27, 1.15, 0.15, '#b8a088'], [0.2, 0.75, -0.13, 0.36, 0.82, 0.13, '#8a6f55'],
+        [0.15, 1.18, -0.1, 0.42, 1.4, 0.1, '#9b8064'], [0.4, 1.24, -0.04, 0.47, 1.32, 0.04, '#2b2622'], [0.18, 1.4, -0.1, 0.26, 1.58, -0.04, '#8a6f55'], [0.18, 1.4, 0.04, 0.26, 1.58, 0.1, '#8a6f55']]),
+    };
+    const faunaMesh = {}, faunaMat = new K.MeshStandardMaterial({ vertexColors: true, roughness: 0.8 });
+    for (const kind of Object.keys(FAUNA)) {
+      const list = fauna.filter((a) => a.kind === kind);
+      const m = new K.InstancedMesh(faunaGeo[kind], faunaMat, list.length || 1);
+      m.layers.mask = layer; m.frustumCulled = false; m.castShadow = false; m.name = 'fauna-' + kind;
+      life.root.add(m);
+      faunaMesh[kind] = { m, list };
+    }
+    const FCOL = { ibis: [0.95, 0.94, 0.9], toad: [0.48, 0.42, 0.23], magpie: [0.1, 0.1, 0.1], roo: [0.6, 0.5, 0.39] };
+    function animals(dt) {
+      for (const { m, list } of Object.values(faunaMesh)) {
+        const A = m.instanceMatrix.array;
+        list.forEach((a, n) => {
+          const o = n * 16, sp = a.spec;
+          if (a.gone) { for (let k = 0; k < 11; k++) A[o + k] = 0; return; }
+          const db = Math.hypot(a.x - px, a.z - pz);
+          if (a.state === 'swoop') { // a magpie diving at the ball and away again
+            a.st += dt / 2.4;
+            const t = Math.min(1, a.st), [sx, sz] = a.from, ex = 2 * a.aim[0] - sx, ez = 2 * a.aim[1] - sz;
+            a.x = sx + (ex - sx) * t; a.z = sz + (ez - sz) * t;
+            a.y = ground(a.aim[0], a.aim[1]) + 2 * r + 0.6 + 11 * (2 * t - 1) ** 2;
+            a.h = Math.atan2(ez - sz, ex - sx);
+            if (!a.hit && t > 0.45) { a.hit = true; swooped(a); }
+            if (t >= 1) { a.state = 'ground'; a.cool = 25 + Math.random() * 20; a.home = [a.x, a.z]; if (wet(a.x, a.z)) [a.x, a.z] = a.from; }
+          } else {
+            let speed = 0;
+            a.cool -= dt;
+            if (a.kind === 'magpie' && r < 6 && db < 32 && a.cool <= 0 && Math.random() < dt * 0.6) {
+              a.state = 'swoop'; a.st = 0; a.hit = false; a.from = [a.x, a.z]; a.aim = [px, pz];
+            } else if (sp.fear && db < sp.fear + r * 1.5) { // too close: off it goes
+              a.h = Math.atan2(a.z - pz, a.x - px) + (Math.random() - 0.5) * 0.4; speed = sp.flee; a.moving = true;
+            } else {
+              a.t -= dt;
+              if (a.t <= 0) { a.t = 1 + Math.random() * 3; a.moving = Math.random() < 0.55; a.h += (Math.random() - 0.5) * 2.2; }
+              const hx = a.home[0] - a.x, hz = a.home[1] - a.z, roam = a.kind === 'roo' ? 70 : 25;
+              if (Math.hypot(hx, hz) > roam) a.h = Math.atan2(hz, hx);
+              speed = a.moving ? sp.walk : 0;
+            }
+            let hopY = 0;
+            if (sp.hop && speed > 0) { a.phase += dt * (a.kind === 'roo' ? 5 + speed : 9); hopY = Math.abs(Math.sin(a.phase)) * sp.hop * sp.scale; }
+            const nx = a.x + Math.cos(a.h) * speed * dt, nz = a.z + Math.sin(a.h) * speed * dt;
+            if (!wet(nx, nz)) { a.x = nx; a.z = nz; } else a.h += Math.PI * 0.8;
+            a.y = ground(a.x, a.z) + hopY;
+          }
+          const S = sp.scale, c = Math.cos(a.h), s2 = Math.sin(a.h);
+          A.set([c * S, 0, s2 * S, 0, 0, S, 0, 0, -s2 * S, 0, c * S, 0, a.x, a.y, a.z, 1], o);
+        });
+        m.count = list.length;
+        m.instanceMatrix.needsUpdate = true;
+      }
+    }
+    function swooped(a) {
+      if (r >= MAGPIE_CATCH && Math.hypot(a.x - px, a.z - pz) < r * 2) return; // big enough: pickAll takes it mid-air
+      const side = Math.random() < 0.5 ? -1 : 1, d = Math.hypot(a.x - a.from[0], a.z - a.from[1]) || 1;
+      vx += (-(a.z - a.from[1]) / d) * side * 5; vz += ((a.x - a.from[0]) / d) * side * 5; shake = 0.3;
+      say('Swooped by a magpie!');
+    }
+
     // --- A cutaway: buildings, trees and props between the camera and the ball are see-through near it -------------
     const V3 = city.camera.position.constructor;
     const uBall = { value: new V3() }, uToCam = { value: new V3(0, 1, 0) }, uCut = { value: 0 }, uNear = { value: 0 };
@@ -346,9 +477,7 @@
     if (stuckTrees) stuckTrees.setColorAt(0, new Color('#5a8f4c'));
 
     // --- The ball's state -------------------------------------------------------------------------------------------
-    const ground = (x, z) => (T ? T.h(x, z) : 0);
     const deck = (x, z, r) => (T ? T.deckAt(x, z, Math.min(30, r)) : null);
-    const wet = (x, z) => !!(T && T.inWater(x, z));
     // start on the footpath of the road nearest Boundary Street, West End
     let [px, pz] = toXZ(...START);
     {
@@ -367,7 +496,7 @@
     }
     let r = R0, vx = 0, vz = 0, az = 135, py = ground(px, pz) + r;
     const Rm = [1, 0, 0, 0, 1, 0, 0, 0, 1]; // the ball's rotation, row-major
-    const stats = { car: 0, tree: 0, building: 0, cyclist: 0, bus: 0, train: 0, names: [], biggest: null };
+    const stats = { car: 0, tree: 0, building: 0, cyclist: 0, bus: 0, train: 0, ferry: 0, names: [], biggest: null };
     let clock = 0, goal = 0, shake = 0, toastAt = -9, bannerAt = -9, things = 0, finished = false;
     const stuck = { car: [], tree: [], box: [] }, CAP = { car: 700, tree: 900, box: 700 };
 
@@ -405,7 +534,7 @@
 
     // --- Picking things up ---------------------------------------------------------------------------------------------
     const carA = () => life.cars.mesh.instanceMatrix.array, carC = life.cars.mesh.instanceColor?.array;
-    const goneCars = new Set();
+    const goneCars = new Set(), goneCats = new Set();
     let treesDirty = new Set(), buildingsDirty = false, picksThisFrame = 0;
     function pickAll() {
       const cap = PICK * r, reach = r * 1.05;
@@ -420,6 +549,16 @@
         const c = crowdMesh.instanceColor.array;
         stick('box', q.x, ground(q.x, q.z) + PH / 2, q.z, [0.6 * 1.4, PH, 0.45 * 1.4], [c[people.indexOf(q) * 3], c[people.indexOf(q) * 3 + 1], c[people.indexOf(q) * 3 + 2]]);
         grow(0.25 * PROP_GROW * 6); note('a person', PH);
+      }
+      // animals (a magpie only when it's low enough to touch)
+      for (const a of fauna) {
+        if (a.gone || a.size > cap || Math.abs(a.x - px) > reach + 3 || Math.abs(a.z - pz) > reach + 3) continue;
+        if (a.state === 'swoop' && r < MAGPIE_CATCH) continue; // a diving magpie is too quick for a small ball
+        if (Math.hypot(a.x - px, a.z - pz) > reach + a.size * 0.3 || a.y - py > r + a.size) continue;
+        a.gone = true; picksThisFrame++; stats[a.kind] = (stats[a.kind] || 0) + 1;
+        const S = a.spec.scale;
+        stick('box', a.x, a.y + (a.spec.tall * S) / 2, a.z, [a.spec.len * S, a.spec.tall * S, Math.max(0.15, a.spec.len * 0.4) * S], FCOL[a.kind]);
+        grow(a.spec.worth * PROP_GROW); note(a.spec.label + (a.state === 'swoop' ? ' in mid-swoop' : ''), a.size + (a.kind === 'roo' ? 5 : 0));
       }
       // street furniture
       let propsDirty = false;
@@ -510,6 +649,26 @@
         stick('box', d.x, d.y + 3, d.z, [147, 6.2, 3.2], [0.95, 0.95, 0.93]);
         grow(147 * 3.2 * 6.2 * 0.6); note('a train', 147);
       }
+      // CityCats: 25 m long, so from about 23 m across, from the bank or a terminal (or wading, from 80 m)
+      if (cap >= 25) {
+        const LF = window.__liveFerries, title = (t) => String(t || '').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+        if (LF?.live) for (const d of LF.drawn) {
+          if (LF.gone.has(d.b) || Math.hypot(d.x - px, d.z - pz) > reach + 10) continue;
+          LF.gone.add(d.b); stats.ferry++;
+          stick('box', d.x, 2.5, d.z, [25, 4.5, 9], [0.96, 0.96, 0.95]);
+          grow(25 * 9 * 4.5 * 0.5); note(d.name ? `the CityCat ${title(d.name)}` : 'a CityCat', 60);
+        }
+        else if (life.cats?.mesh?.visible) {
+          const a = life.cats.mesh.instanceMatrix.array;
+          for (let i = 0; i < life.cats.mesh.count; i++) {
+            const o = i * 16;
+            if (goneCats.has(i) || (!a[o] && !a[o + 2]) || Math.hypot(a[o + 12] - px, a[o + 14] - pz) > reach + 10) continue;
+            goneCats.add(i); stats.ferry++;
+            stick('box', a[o + 12], 2.5, a[o + 14], [25, 4.5, 9], [0.96, 0.96, 0.95]);
+            grow(25 * 9 * 4.5 * 0.5); note('a CityCat', 60);
+          }
+        }
+      }
       // buildings: pick up the small ones, bounce off the big ones
       near(bgrid, px, pz, reach + 30, (p) => {
         if (p.gone || p.x1 < px - reach || p.x0 > px + reach || p.z1 < pz - reach || p.z0 > pz + reach) return;
@@ -561,7 +720,9 @@
       const n = (v, one, many) => (v ? [`${v.toLocaleString()} ${v === 1 ? one : many}`] : []);
       const list = [...n(stats.building, 'building', 'buildings').map((t) => (named.length ? `${t} (${named.join(', ')} among them)` : t)),
         ...n(stats.tree, 'tree', 'trees'), ...n(stats.car, 'car', 'cars'), ...n(stats.bus, 'bus', 'buses'), ...n(stats.train, 'train', 'trains'),
-        ...n(stats.cyclist, 'cyclist', 'cyclists'), ...n(stats.person, 'person', 'people'), ...n(stats.prop, 'bit of street furniture', 'bits of street furniture')];
+        ...n(stats.ferry, 'CityCat', 'CityCats'), ...n(stats.cyclist, 'cyclist', 'cyclists'), ...n(stats.person, 'person', 'people'),
+        ...n(stats.roo, 'kangaroo', 'kangaroos'), ...n(stats.ibis, 'ibis', 'ibis'), ...n(stats.magpie, 'magpie', 'magpies'), ...n(stats.toad, 'cane toad', 'cane toads'),
+        ...n(stats.prop, 'bit of street furniture', 'bits of street furniture')];
       const all = list.length > 1 ? `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}` : list[0];
       say('+ Brisbane Skytower', `You rolled up Brisbane in ${mmss(clock)}<small>That's ${all}. Keep rolling.</small>`);
     }
@@ -569,7 +730,9 @@
     // --- Controls ---------------------------------------------------------------------------------------------------
     const canvas = document.getElementById('c') || city.renderer.domElement;
     const keys = new Set();
-    const KEYMAP = { ArrowUp: 'f', KeyW: 'f', ArrowDown: 'b', KeyS: 'b', ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r' };
+    const KEYMAP = { ArrowUp: 'f', KeyW: 'f', ArrowDown: 'b', KeyS: 'b', ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r',
+      KeyQ: 'ol', KeyE: 'or', KeyR: 'tu', KeyF: 'td', Equal: 'zi', NumpadAdd: 'zi', Minus: 'zo', NumpadSubtract: 'zo' };
+    let zoom = 1, tilt = 0; // the player's own camera: zoom (x the automatic span) and tilt (degrees on the automatic angle)
     addEventListener('keydown', (e) => {
       if (e.code === 'Escape') return go(false);
       const k = KEYMAP[e.code];
@@ -578,18 +741,109 @@
     }, true);
     addEventListener('keyup', (e) => { const k = KEYMAP[e.code]; if (k) { keys.delete(k); e.preventDefault(); } }, true);
     addEventListener('blur', () => keys.clear());
-    let drag = null;
-    // The map's own drag-to-orbit, zoom and hover all stop here: the canvas belongs to the game.
+    let drag = null, look = null, pinch = null;
+    const pointers = new Map(), spread = () => { const [a, b] = [...pointers.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
+    // The map's own drag-to-orbit, zoom and hover all stop here: the canvas belongs to the game. A left drag (or one
+    // finger) steers; a right or middle drag looks round; the wheel, or two fingers, zoom.
     for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'pointerleave', 'wheel', 'dblclick', 'contextmenu', 'click'])
       document.addEventListener(type, (e) => {
         if (e.target !== canvas) return;
         e.stopImmediatePropagation();
         if (type === 'wheel' || type === 'contextmenu') e.preventDefault();
-        if (type === 'pointerdown') { drag = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0 }; canvas.setPointerCapture?.(e.pointerId); }
-        else if (type === 'pointermove' && drag?.id === e.pointerId) { drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y; }
-        else if ((type === 'pointerup' || type === 'pointercancel') && drag?.id === e.pointerId) drag = null;
+        if (type === 'wheel') { zoom = Math.max(0.5, Math.min(5, zoom * Math.exp(e.deltaY * 0.0015))); return; }
+        if (type === 'pointerdown') {
+          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          canvas.setPointerCapture?.(e.pointerId);
+          if (pointers.size === 2) { pinch = { d: spread(), z: zoom }; drag = null; }
+          else if (e.button === 1 || e.button === 2) look = { id: e.pointerId, x: e.clientX, y: e.clientY, az, tilt };
+          else drag = { id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, dy: 0 };
+        } else if (type === 'pointermove' && pointers.has(e.pointerId)) {
+          pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+          if (pinch && pointers.size >= 2) zoom = Math.max(0.5, Math.min(5, (pinch.z * pinch.d) / spread()));
+          else if (look?.id === e.pointerId) { az = (look.az - (e.clientX - look.x) * 0.35 + 720) % 360; tilt = Math.max(-25, Math.min(30, look.tilt + (e.clientY - look.y) * 0.15)); }
+          else if (drag?.id === e.pointerId) { drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y; }
+        } else if (type === 'pointerup' || type === 'pointercancel') {
+          pointers.delete(e.pointerId);
+          if (pointers.size < 2) pinch = null;
+          if (drag?.id === e.pointerId) drag = null;
+          if (look?.id === e.pointerId) look = null;
+        }
       }, { capture: true, passive: false });
     canvas.style.touchAction = 'none';
+
+    // --- The minimap, and the street the ball is on ------------------------------------------------------------------
+    const mapCanvas = mapBox.querySelector('canvas'), mctx = mapCanvas.getContext('2d'), streetEl = mapBox.querySelector('.street');
+    const MW = mapCanvas.width, polys = (list) => (list || []).map((g) => {
+      const a = ring0(g);
+      let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+      for (let i = 0; i < a.length; i += 2) { x0 = Math.min(x0, a[i]); x1 = Math.max(x1, a[i]); z0 = Math.min(z0, a[i + 1]); z1 = Math.max(z1, a[i + 1]); }
+      return { a, x0, x1, z0, z1 };
+    });
+    const greens = polys(data.green), waters = polys(data.water);
+    const roads = (data.roads || []).map(([w, a]) => {
+      let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+      for (let i = 0; i < a.length; i += 2) { x0 = Math.min(x0, a[i]); x1 = Math.max(x1, a[i]); z0 = Math.min(z0, a[i + 1]); z1 = Math.max(z1, a[i + 1]); }
+      return { w, a, x0, x1, z0, z1 };
+    });
+    const css2 = (n, d) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d;
+    let mapClock = 0, streetClock = 0;
+    function drawMap(azDeg) {
+      const R = Math.max(110, r * 22), s = MW / (2 * R), ar = (azDeg * Math.PI) / 180, c = Math.cos(ar) * s, sn = Math.sin(ar) * s;
+      const x0 = px - R * 1.42, x1 = px + R * 1.42, z0 = pz - R * 1.42, z1 = pz + R * 1.42, vis = (q) => q.x1 > x0 && q.x0 < x1 && q.z1 > z0 && q.z0 < z1;
+      mctx.setTransform(1, 0, 0, 1, 0, 0);
+      mctx.fillStyle = '#e8dcc6'; mctx.fillRect(0, 0, MW, MW);
+      // screen = rotate so the way the camera looks is up; world (x east, z south)
+      mctx.setTransform(c, sn, -sn, c, MW / 2 - (c * px - sn * pz), MW / 2 - (sn * px + c * pz));
+      const fill = (q, col) => { const a = q.a; mctx.beginPath(); mctx.moveTo(a[0], a[1]); for (let i = 2; i < a.length; i += 2) mctx.lineTo(a[i], a[i + 1]); mctx.closePath(); mctx.fillStyle = col; mctx.fill(); };
+      for (const q of greens) if (vis(q)) fill(q, '#b7cf95');
+      for (const q of waters) if (vis(q)) fill(q, '#7fb8cb');
+      if (R < 700) for (const p of parts) if (!p.gone && p.x1 > x0 && p.x0 < x1 && p.z1 > z0 && p.z0 < z1) fill({ a: p.pts }, '#cbbfa8');
+      mctx.strokeStyle = '#ffffff'; mctx.lineCap = 'round'; mctx.lineJoin = 'round';
+      for (const q of roads) if (vis(q)) {
+        mctx.lineWidth = Math.max(q.w, 1.6 / s);
+        const a = q.a; mctx.beginPath(); mctx.moveTo(a[0], a[1]); for (let i = 2; i < a.length; i += 2) mctx.lineTo(a[i], a[i + 1]); mctx.stroke();
+      }
+      // animals worth chasing, as dots
+      const dot = (x, z, rad, col) => { mctx.beginPath(); mctx.arc(x, z, rad, 0, Math.PI * 2); mctx.fillStyle = col; mctx.fill(); };
+      if (R < 600) for (const a of fauna) if (!a.gone && a.x > x0 && a.x < x1 && a.z > z0 && a.z < z1 && a.kind !== 'toad') dot(a.x, a.z, 2.6 / s, a.kind === 'roo' ? '#9b6a3c' : a.kind === 'magpie' ? '#1d1d1d' : '#f7f7f2');
+      dot(px, pz, Math.max(r, 5 / s), '#e8478b');
+      // a north mark on the rim
+      mctx.setTransform(1, 0, 0, 1, 0, 0);
+      const nx = -Math.sin(ar), ny = -Math.cos(ar), rim = MW / 2 - 16;
+      mctx.fillStyle = css2('--ink', '#2b2622'); mctx.font = "800 22px 'Hanken Grotesk', system-ui, sans-serif"; mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
+      mctx.fillText('N', MW / 2 + nx * rim, MW / 2 + ny * rim);
+    }
+    // the street: the nearest named road or path within reach, from OpenStreetMap; the suburb: the nearest suburb label
+    const sgrid = new Map(), SC = 60;
+    let streetNames = [];
+    fetch('streets.json').then((r) => (r.ok ? r.json() : null)).then((sj) => {
+      if (!sj) return;
+      streetNames = sj.names;
+      for (const [ni, ...a] of sj.ways)
+        for (let i = 0; i + 3 < a.length; i += 2) {
+          const seg = [ni, a[i], a[i + 1], a[i + 2], a[i + 3]];
+          for (let gi = Math.floor(Math.min(a[i], a[i + 2]) / SC); gi <= Math.floor(Math.max(a[i], a[i + 2]) / SC); gi++)
+            for (let gj = Math.floor(Math.min(a[i + 1], a[i + 3]) / SC); gj <= Math.floor(Math.max(a[i + 1], a[i + 3]) / SC); gj++) {
+              const k = key(gi, gj); let l = sgrid.get(k); if (!l) sgrid.set(k, (l = [])); l.push(seg);
+            }
+        }
+    }).catch(() => {});
+    const suburbs = (data.labels || []).filter((l) => l[4] === 'suburb' || l[4] === 'centre');
+    function whereAmI() {
+      let best = null, bd = (r + 35) ** 2;
+      const gi = Math.floor(px / SC), gj = Math.floor(pz / SC), k = Math.ceil((r + 35) / SC);
+      for (let i = gi - k; i <= gi + k; i++) for (let j = gj - k; j <= gj + k; j++)
+        for (const [ni, ax, az2, bx, bz] of sgrid.get(key(i, j)) || []) {
+          const dx = bx - ax, dz = bz - az2, t = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az2) * dz) / (dx * dx + dz * dz || 1)));
+          const d = (ax + dx * t - px) ** 2 + (az2 + dz * t - pz) ** 2;
+          if (d < bd) (bd = d), (best = streetNames[ni]);
+        }
+      let sub = null, sd = Infinity;
+      for (const [name, x, z] of suburbs) { const d = Math.hypot(x - px, z - pz); if (d < sd) (sd = d), (sub = name); }
+      if (wet(px, pz)) best = 'Brisbane River';
+      const html = best ? `${best}<small>${sub ?? ''}</small>` : `${sub ?? 'Brisbane'}`;
+      if (streetEl.innerHTML !== html) streetEl.innerHTML = html;
+    }
 
     // --- Every frame ------------------------------------------------------------------------------------------------
     const lifeUpdate = life.update.bind(life);
@@ -599,6 +853,12 @@
       const a = carA();
       for (const i of goneCars) for (let q = 0; q < 11; q++) a[i * 16 + q] = 0;
       life.cars.mesh.instanceMatrix.needsUpdate = true;
+      if (goneCats.size && life.cats?.mesh) { // and the simulated CityCats it has taken stay off the river
+        const c = life.cats.mesh.instanceMatrix.array, w = life.cats.wake?.instanceMatrix.array;
+        for (const i of goneCats) for (let q = 0; q < 11; q++) { c[i * 16 + q] = 0; if (w) w[i * 16 + q] = 0; }
+        life.cats.mesh.instanceMatrix.needsUpdate = true;
+        if (life.cats.wake) life.cats.wake.instanceMatrix.needsUpdate = true;
+      }
       step(dt);
     };
     function step(dt) {
@@ -606,6 +866,10 @@
       clock += dt;
       // input: forward/back along the camera's view, turning swings the camera round
       let f = (keys.has('f') ? 1 : 0) - (keys.has('b') ? 1 : 0), turn = (keys.has('l') ? 1 : 0) - (keys.has('r') ? 1 : 0);
+      turn += (keys.has('ol') ? 1 : 0) - (keys.has('or') ? 1 : 0);
+      tilt = Math.max(-25, Math.min(30, tilt + ((keys.has('tu') ? 1 : 0) - (keys.has('td') ? 1 : 0)) * 40 * dt));
+      if (keys.has('zi')) zoom = Math.max(0.5, zoom * Math.exp(-1.5 * dt));
+      if (keys.has('zo')) zoom = Math.min(5, zoom * Math.exp(1.5 * dt));
       if (drag) { f = Math.max(-1, Math.min(1, -drag.dy / 90)); turn = Math.max(-1, Math.min(1, -drag.dx / 110)); }
       if (f || turn) help.style.opacity = 0;
       az = (az + turn * 105 * dt + 360) % 360;
@@ -624,6 +888,7 @@
       const mx = nx - px, mz = nz - pz;
       px = nx; pz = nz;
       walk(dt);
+      animals(dt);
       pickAll();
       // roll: about the axis across the motion, by the distance over the radius
       const dist = Math.hypot(mx, mz);
@@ -659,15 +924,20 @@
       treesDirty = new Set(); buildingsDirty = false;
 
       // the camera: behind the ball, a little ahead of it, zooming out as it grows
-      const v = city.view, span = Math.max(32, r * 17) * Math.max(0.55, Math.min(1, innerWidth / innerHeight)); // closer on a phone held upright
+      const v = city.view, span = Math.max(32, r * 17) * Math.max(0.55, Math.min(1, innerWidth / innerHeight)) * zoom; // closer on a phone held upright
       const sk = shake > 0 ? (shake -= dt, (Math.random() - 0.5) * r * 0.25) : 0;
-      const el = Math.max(34, Math.min(60, 60 - 6 * Math.log2(Math.max(1, r)))); // steeper while it's small, so less hides it
+      const el = Math.max(15, Math.min(85, Math.max(34, Math.min(60, 60 - 6 * Math.log2(Math.max(1, r)))) + tilt)); // steeper while it's small, so less hides it
       Object.assign(v, { cx: px + fx * span * 0.1 + sk, cz: pz + fz * span * 0.1 + sk, span: v.span + (span - v.span) * Math.min(1, 3 * dt), azimuth: az, elevation: el });
       city.updateCamera();
       const er = (el * Math.PI) / 180, ar2 = (az * Math.PI) / 180;
       uToCam.value.set(Math.cos(er) * Math.sin(ar2), Math.sin(er), Math.cos(er) * Math.cos(ar2));
       uBall.value.set(px, py, pz);
       uCut.value = Math.max(5, r * 2.2); uNear.value = r * 1.15;
+
+      mapClock -= dt;
+      if (mapClock <= 0) { mapClock = 0.15; drawMap(az); }
+      streetClock -= dt;
+      if (streetClock <= 0) { streetClock = 0.4; whereAmI(); }
 
       // the HUD
       const size = 2 * r;
@@ -682,7 +952,7 @@
       if (clock - bannerAt > (finished ? 9 : 3.2)) banner.classList.remove('on');
     }
 
-    window.__roll = { get r() { return r; }, get pos() { return [px, py, pz]; }, set pos([x, z]) { px = x; pz = z; }, stats, keys,
+    window.__roll = { get r() { return r; }, get pos() { return [px, py, pz]; }, set pos([x, z]) { px = x; pz = z; }, stats, keys, fauna,
       grow: (m) => { r = m; }, get az() { return az; }, set az(a) { az = a; } };
     hud.querySelector('.meta').textContent = '0 things rolled up · 0:00';
     city.view.span = 32;
