@@ -1,8 +1,8 @@
 # Brisbane pixel diorama
 
-A 3D pixel-art model of everything within 5 km of West End, Brisbane: the CBD, Eagle Street, the river and the inner suburbs. Drag to orbit, scroll to zoom, hover or click a building for its height and floors, and hover a ferry, a train or a plane to see what it is. The ground follows the real terrain, the river bridges are hand-built models, and the CityCats, ferries, trains and planes are live. Buildings and hills are drawn 1.6× taller, and the cars and buses are simulated. A sun slider moves the shadows from 6am to 5:15pm, and the photo view frames Eagle Street.
+A 3D pixel-art model of everything within 5 km of West End, Brisbane: the CBD, Eagle Street, the river and the inner suburbs. Drag to orbit, scroll to zoom, hover or click a building for its height and floors, and hover a ferry, train, bus, ship or plane to see what it is. The ground follows the real terrain, the river bridges are hand-built models, and the CityCats, ferries, trains, buses, Metro and planes are live. The cars are simulated at live traffic levels and the cyclists from the council's bike counts. The sun, the weather and night follow the real time in Brisbane, with lit windows, street lights and headlights after dark. Buildings and hills are drawn 1.6× taller, and the photo view frames Eagle Street.
 
-Built with Claude on 13 October 2026; the terrain, bridges, railway and live ferries, trains and planes were added on 19 October.
+Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferries, trains, buses and planes, traffic levels, cyclists, ships, the real sky and night were added on 19 October.
 
 ## Files
 
@@ -14,8 +14,14 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway and live fer
 | `terrain.js`, `terrain.json`, `terrain.bin` | The ground: a 10 m height grid (3 MB) and where everything sits on it |
 | `bridges.js`, `bridges.json` | Hand-built models of 14 river bridges, and which of the map's bridges each one replaces |
 | `ferry-terminals.js`, `terminals.json` | The 17 ferry terminals on their real outlines, and the hover cards |
-| `live-config.js`, `live-ferries.js`, `live-trains.js`, `live-planes.js` | The live ferries, trains and planes |
+| `live-config.js`, `live-ferries.js`, `live-trains.js`, `live-planes.js` | The live ferries, trains and planes, and which relay they read |
 | `rail.json` | The railway: 115 km of track and the station platforms, and TransLink's stop ids for naming each train's next stop |
+| `live-graph.js` | Following the tracks and roads between GPS fixes, for the trains and buses |
+| `live-buses.js`, `buses.json` | The live buses and Metro, and the 382 km of roads and busways they follow |
+| `live-traffic.js`, `traffic.json` | The cars at live traffic levels, and where the council's 496 traffic signals in the map are |
+| `live-cyclists.js`, `cycling.json` | The cyclists, 190 km of bikeways and the council's bike counts |
+| `live-sky.js` | The real sun, the weather and night |
+| `live-ships.js` | The live ships |
 | `airport.html`, `airport.json` | A second map: everything within 4.5 km of Brisbane Airport (1.8 MB) |
 | `airport.js`, `airport-features.json` | The airfield: runways with their markings, taxiways and aprons |
 
@@ -29,7 +35,16 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 - **Trains:** every Queensland Rail train on the map, from TransLink's open feed, which reports each train's GPS position about every 20 seconds. Each train is drawn 45 seconds behind real time and follows the track between fixes, taking the right line through junctions, over the bridges and into the tunnels. The model had no railway, so the tracks and platforms come from OpenStreetMap. Hover a train for where it's going, where it came from and its next stop.
 - **Planes:** every aircraft within about 9 km of West End, from adsb.lol's open ADS-B data, drawn about 16 seconds behind real time on their real tracks, banking into turns. adsb.lol allows about 500 requests a day, roughly two hours of viewing; after that the map flies simulated planes until the limit resets. Up to 300 m they're at true scale; higher ones are eased down so they still fly over the map, and their shadows mark where they really are.
 - **Where each flight is going:** the relay looks each callsign up in [adsbdb.com](https://www.adsbdb.com/)'s route database, and the hover card shows the route when the plane is near its path. Helicopters and private aircraft show their registered owner.
+- **Buses and Metro:** every bus and Brisbane Metro vehicle on the map, from TransLink's bus feed, drawn 50 seconds behind real time and following the roads and busways between fixes, keeping to one-way streets. The Metro's three sections bend round corners. Hover one for its route, the route's two ends and its next stop.
+- **Ships:** every vessel sending AIS round Brisbane, from aisstream.io, sized and coloured by its type. They appear once the relay has an aisstream.io key.
 - If the relay doesn't answer, the map falls back to simulated CityCats and planes and leaves the trains out. `?ferries=off` and `?planes=off` force the simulation, and `?trains=off` hides the trains.
+
+## Traffic, cyclists and the sky
+
+- **Traffic levels:** the cars are simulated, but how many are on the roads near each signal follows Brisbane City Council's live traffic signal data, read straight from its open data portal every five minutes. At 9:25pm on a Monday about 1,600 of the 7,000 cars are out.
+- **Cyclists:** riders on 190 km of bikeways, as many as the council's 12 bike counters in the map count on that day of the week (October and November 2025, the latest published), spread over the day with commuting peaks, at about 20 km/h. About 350 ride at 7:30am on a weekday. Half stay home in the rain.
+- **The sun and weather:** the slider runs the whole day and the Now button keeps it at the time in Brisbane, with the sun where it really is today. The weather is Open-Meteo's for Brisbane now: cloud dims the light, rain falls, and the toolbar shows the temperature and sky.
+- **Night:** the light fades to moonlight, windows light up (more in the evening than in the small hours), and street lights, headlights and tail lights come on.
 
 ## Brisbane Airport
 
@@ -47,8 +62,10 @@ Then open http://localhost:8000/. The fonts come from Google Fonts; offline, it 
 
 ## Data
 
-- Buildings, streets, parks, the railway, bridge outlines and ferry terminals © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.
+- Buildings, streets, parks, the railway, bus routes, bikeways, bridge outlines and ferry terminals © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.
 - Elevation: Queensland DEM (QldDem), CC BY-SA. Includes material © State of Queensland (Department of Natural Resources and Mines, Manufacturing, and Regional and Rural Development); © Commonwealth of Australia (Geoscience Australia, The Australian Hydrographic Office); © www.deepreef.org 2025. The height grid in `terrain.bin` is shared under the same licence.
-- Ferry and train positions: TransLink SEQ GTFS-RT, CC BY 4.0.
+- Ferry, train and bus positions: TransLink SEQ GTFS-RT, CC BY 4.0.
+- Bus stop names, traffic signal data and bike counts: Brisbane City Council open data, CC BY 4.0.
+- Weather: [Open-Meteo](https://open-meteo.com/), CC BY 4.0. Ships: AIS from [aisstream.io](https://aisstream.io/).
 - Aircraft positions: [adsb.lol](https://adsb.lol/) open data. Flight routes and aircraft owners: [adsbdb.com](https://www.adsbdb.com/).
 - The airport map and airfield: © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.

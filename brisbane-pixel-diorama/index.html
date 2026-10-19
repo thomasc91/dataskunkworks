@@ -29,7 +29,7 @@
   <a class="back" href="../">&larr; /all work</a>
   <p class="kicker">2026 <span class="dot">/</span> three.js <span class="dot">/</span> WebGL <span class="dot">/</span> Open map data</p>
   <h1>Brisbane pixel diorama</h1>
-  <p class="standfirst">Every building within 5 km of West End, from the CBD towers to the Queenslanders, on the real hills, with live CityCats on the river, live trains on the tracks, live planes overhead and a sun you can move.</p>
+  <p class="standfirst">Every building within 5 km of West End, from the CBD towers to the Queenslanders, on the real hills, with live CityCats, trains, buses and planes, cars and cyclists at real traffic levels, and the real sun, weather and night.</p>
 
   <div class="stage" data-src="../projects/brisbane-pixel-diorama/" data-title="Brisbane pixel diorama">
     <img class="poster" src="../thumbs/brisbane-pixel-diorama.jpg" alt="">
@@ -46,21 +46,22 @@
     <article class="writeup">
     <h2>What you&#x27;re looking at</h2>
     <p>Drag to orbit, scroll to zoom, and hover or click a building to see its height and floors. The sun slider moves the shadows from 6am to 5:15pm, and the photo view frames Eagle Street.</p>
-    <p>The CityCats, ferries and trains sit at their real GPS positions, and the planes are the real flights passing over Brisbane, so hover any of them to see where it&#x27;s headed. The cars and buses are simulated.</p>
+    <p>The CityCats, ferries, trains, buses and Metro sit at their real GPS positions, and the planes are the real flights passing over Brisbane, so hover any of them to see where it&#x27;s headed. The cars are simulated, but how many are out follows the council&#x27;s live traffic signal data, and the cyclists ride the bikeways in the numbers its bike counters record.</p>
     <p>The Airport button opens a second map of Brisbane Airport, where you can watch the planes land, take off and taxi to the gates.</p>
+    <p>The sun, the weather and night follow the real time in Brisbane, so after dark the windows, street lights and headlights come on.</p>
     <p>Buildings and hills are drawn 1.6 times taller than they really are, so the skyline still reads from a distance.</p>
     <h2>How it was made</h2>
     <p>The model is one data file: 57,008 building footprints with heights, the trees, 14,304 road segments, the parks and the river, all clipped to a circle 5 km around West End. three.js draws it in WebGL, and the pixel finish, labels and traffic can each be switched off.</p>
     <p>The ground follows Queensland&#x27;s bare-earth LiDAR elevation model, sampled every 10 m, so Mt Coot-tha and the inner-city hills rise out of the map. The river bridges are hand-built models drawn from published dimensions and photos.</p>
     <p>The railway comes from OpenStreetMap, and each train follows the track between its GPS fixes, through the junctions, over the bridges and into the tunnels.</p>
-    <p>The live ferries, trains and planes come through a small relay on Cloudflare, which fetches each feed every few seconds and shares it with everyone who has the map open.</p>
+    <p>The live ferries, trains, buses and planes come through a small relay on Cloudflare, which fetches each feed every few seconds and shares it with everyone who has the map open.</p>
     <p>It was built with Claude in October 2026.</p>
     <h2>The data</h2>
-    <p>Buildings, streets, parks and the railway are © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation. The elevation is the State of Queensland&#x27;s QldDem (CC BY-SA), the ferry and train positions are TransLink&#x27;s open GTFS-RT feed (CC BY 4.0), and the aircraft positions are <a href="https://adsb.lol/">adsb.lol</a> open data.</p>
+    <p>Buildings, streets, parks and the railway are © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation. The elevation is the State of Queensland&#x27;s QldDem (CC BY-SA), the ferry, train and bus positions are TransLink&#x27;s open GTFS-RT feed (CC BY 4.0), the traffic signal data and bike counts are Brisbane City Council&#x27;s (CC BY 4.0), the weather is Open-Meteo&#x27;s, and the aircraft positions are <a href="https://adsb.lol/">adsb.lol</a> open data.</p>
     <p>The map files come to 14 MB, so give it a few seconds on a phone.</p>
     </article>
     <aside class="facts"><dl>
-      <div><dt>Data</dt><dd>OpenStreetMap, Overture Maps, Queensland&#x27;s LiDAR elevation model, TransLink and adsb.lol</dd></div>
+      <div><dt>Data</dt><dd>OpenStreetMap, Overture Maps, Queensland&#x27;s LiDAR elevation model, TransLink, Brisbane City Council, Open-Meteo and adsb.lol</dd></div>
       <div><dt>Scale</dt><dd>57,008 buildings, 136,000 trees and 14 hand-built bridges in a 5 km circle, plus the airport</dd></div>
       <div><dt>Built with</dt><dd>three.js r170 and WebGL, with Claude</dd></div>
       <div><dt>Code</dt><dd><a href="https://github.com/thomasc91/dataskunkworks/tree/main/projects/brisbane-pixel-diorama">projects/brisbane-pixel-diorama on GitHub</a></dd></div>
