@@ -26,6 +26,7 @@ Neither feed lets a web page read it directly, so the page reads both through a 
 
 - **Ferries:** the GPS position of every CityCat, CityHopper and cross-river ferry, from TransLink's open feed. Each boat is drawn about a minute behind real time, gliding between fixes along the river.
 - **Planes:** every aircraft within about 9 km of West End, from adsb.lol's open ADS-B data, drawn about 16 seconds behind real time on their real tracks, banking into turns. adsb.lol allows about 500 requests a day, roughly two hours of viewing; after that the map flies simulated planes until the limit resets. Up to 300 m they're at true scale; higher ones are eased down so they still fly over the map, and their shadows mark where they really are.
+- **Where each flight is going:** the relay looks each callsign up in [adsbdb.com](https://www.adsbdb.com/)'s route database, and the hover card shows the route when the plane is near its path. Helicopters and private aircraft show their registered owner.
 - If the relay doesn't answer, the map falls back to simulated CityCats and planes. `?ferries=off` and `?planes=off` force the simulation.
 
 ## Brisbane Airport
@@ -47,5 +48,5 @@ Then open http://localhost:8000/. The fonts come from Google Fonts; offline, it 
 - Buildings, streets, parks, bridge outlines and ferry terminals © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.
 - Elevation: Queensland DEM (QldDem), CC BY-SA. Includes material © State of Queensland (Department of Natural Resources and Mines, Manufacturing, and Regional and Rural Development); © Commonwealth of Australia (Geoscience Australia, The Australian Hydrographic Office); © www.deepreef.org 2025. The height grid in `terrain.bin` is shared under the same licence.
 - Ferry positions: TransLink SEQ GTFS-RT, CC BY 4.0.
-- Aircraft positions: [adsb.lol](https://adsb.lol/) open data.
+- Aircraft positions: [adsb.lol](https://adsb.lol/) open data. Flight routes and aircraft owners: [adsbdb.com](https://www.adsbdb.com/).
 - The airport map and airfield: © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.

@@ -15,6 +15,10 @@
 // with the tail in the airline's colour. While the relay answers, the simulated planes stop; if it doesn't, they
 // carry on as before. ?planes=off keeps the simulation.
 //
+// The hover card also says where a flight is going: the relay looks each callsign up in adsbdb.com's route
+// database and only passes a route on when the plane is near its path. For helicopters and private aircraft it
+// gives the registered owner (LifeFlight, the police and so on).
+//
 // A page can set window.DIORAMA_PLANES = {area, ground}: area asks the relay for another map's surroundings (the
 // airport), and ground also draws aircraft on the ground, taxiing and parked, sitting on their wheels and facing
 // their real heading.
@@ -258,7 +262,10 @@
       a.rel = 'noopener';
       a.textContent = source.source || 'adsb.fi';
       a.style.color = 'inherit';
-      credit.replaceChildren(` · Planes: live from `, a, over ? '' : `, ${what}`);
+      const b = document.createElement('a');
+      Object.assign(b, { href: 'https://www.adsbdb.com/', target: '_blank', rel: 'noopener', textContent: 'adsbdb' });
+      b.style.color = 'inherit';
+      credit.replaceChildren(` · Planes: live from `, a, `, routes from `, b, over ? '' : `, ${what}`);
     }
 
     let timer = 0, source = {};
@@ -303,14 +310,17 @@
       const num = al && al[1] && /^[A-Z]{3,4}\d/.test(call) ? `${al[1]}${call.replace(/^[A-Z]+/, '')}` : '';
       const title = al ? `${al[0]}${num ? ' ' + num : call && !/^\d/.test(call.slice(3)) ? ' ' + call : ''}` : call || i.reg || 'Aircraft';
       const type = [TYPES[i.type] || i.type || (p.heli ? 'Helicopter' : ''), i.reg].filter(Boolean).join(' · ');
+      const place = (e) => (e.city && e.iata ? `${e.city} (${e.iata})` : e.city || e.iata || e.icao || '?');
+      const route = i.route ? [[`${place(i.route.from)} → ${place(i.route.to)}`]] : [];
+      const owner = !al && i.owner ? [[i.owner, true]] : [];
       const climb = (i.rate || 0) > 300 ? ', climbing' : (i.rate || 0) < -300 ? ', descending' : '';
       const ft = p.h / FT, deg = (((p.trk * 180) / Math.PI) % 360 + 360) % 360;
       if (p.onGround) {
         const kmh = p.gs * 3.6;
-        return [[title], ...(type ? [[type, true]] : []),
+        return [[title], ...route, ...(type ? [[type, true]] : []), ...owner,
           [kmh > 60 ? `On the runway, ${fmt(kmh)} km/h` : kmh > 4 ? `Taxiing, ${fmt(kmh)} km/h` : 'Parked', true]];
       }
-      return [[title], ...(type ? [[type, true]] : []),
+      return [[title], ...route, ...(type ? [[type, true]] : []), ...owner,
         [`${fmt(ft)} ft (${fmt(p.h)} m)${climb}`, true],
         [`${fmt(p.gs * 3.6)} km/h, heading ${COMPASS[Math.round(deg / 22.5) % 16]}`, true]];
     }
