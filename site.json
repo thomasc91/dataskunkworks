@@ -30,11 +30,11 @@
       ],
       "badge": "3D",
       "summary": "A 3D pixel-art model of inner Brisbane, built from open map data, that you can fly around.",
-      "standfirst": "Every building within 5 km of West End, from the CBD towers to the Queenslanders, with traffic on the roads, CityCats on the river and a sun you can move.",
+      "standfirst": "Every building within 5 km of West End, from the CBD towers to the Queenslanders, on the real hills, with live CityCats on the river, live planes overhead and a sun you can move.",
       "entry": "projects/brisbane-pixel-diorama/",
       "code": "projects/brisbane-pixel-diorama",
       "thumb": "thumbs/brisbane-pixel-diorama.jpg",
-      "load_note": "Loads 11 MB of map data",
+      "load_note": "Loads 14 MB of map data",
       "capture": {
         "wait": 14000,
         "delay": 6000,
@@ -44,11 +44,11 @@
       "facts": [
         [
           "Data",
-          "OpenStreetMap and Overture Maps"
+          "OpenStreetMap, Overture Maps, Queensland's LiDAR elevation model, TransLink and adsb.lol"
         ],
         [
           "Scale",
-          "57,008 buildings and 272,044 trees in a 5 km circle"
+          "57,008 buildings, 136,000 trees and 14 hand-built bridges in a 5 km circle"
         ],
         [
           "Built with",
@@ -60,20 +60,24 @@
           "h": "What you're looking at",
           "p": [
             "Drag to orbit, scroll to zoom, and hover or click a building to see its height and floors. The sun slider moves the shadows from 6am to 5:15pm, and the photo view frames Eagle Street.",
-            "The cars, buses, CityCats and planes are simulated, not live. Buildings are drawn 1.6 times taller than they really are, so the skyline still reads from a distance."
+            "The CityCats and ferries sit at their real GPS positions, and the planes are the real flights passing over Brisbane, so hover one to see its airline, type, height and speed. The cars and buses are simulated.",
+            "Buildings and hills are drawn 1.6 times taller than they really are, so the skyline still reads from a distance."
           ]
         },
         {
           "h": "How it was made",
           "p": [
-            "The model is one data file: 57,008 building footprints with heights, 272,044 trees, 14,304 road segments, the parks, the river and its bridges, all clipped to a circle 5 km around West End. three.js draws it in WebGL, and the pixel finish, labels and traffic can each be switched off.",
+            "The model is one data file: 57,008 building footprints with heights, the trees, 14,304 road segments, the parks and the river, all clipped to a circle 5 km around West End. three.js draws it in WebGL, and the pixel finish, labels and traffic can each be switched off.",
+            "The ground follows Queensland's bare-earth LiDAR elevation model, sampled every 10 m, so Mt Coot-tha and the inner-city hills rise out of the map. The river bridges are hand-built models drawn from published dimensions and photos.",
+            "The live ferries and planes come through a small relay on Cloudflare, which fetches each feed every few seconds and shares it with everyone who has the map open.",
             "It was built with Claude in October 2026."
           ]
         },
         {
           "h": "The data",
           "p": [
-            "Buildings, streets and parks are © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation. The model file is 11.4 MB, so give it a few seconds on a phone."
+            "Buildings, streets and parks are © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation. The elevation is the State of Queensland's QldDem (CC BY-SA), the ferry positions are TransLink's open GTFS-RT feed (CC BY 4.0), and the aircraft positions are [adsb.lol](https://adsb.lol/) open data.",
+            "The map files come to 14 MB, so give it a few seconds on a phone."
           ]
         }
       ]
