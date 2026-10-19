@@ -14,9 +14,15 @@
 // The planes and their shadows are the renderer's own simulated-plane models (a small helicopter is built here),
 // with the tail in the airline's colour. While the relay answers, the simulated planes stop; if it doesn't, they
 // carry on as before. ?planes=off keeps the simulation.
+//
+// A page can set window.DIORAMA_PLANES = {area, ground}: area asks the relay for another map's surroundings (the
+// airport), and ground also draws aircraft on the ground, taxiing and parked, sitting on their wheels and facing
+// their real heading.
 (() => {
   if (new URLSearchParams(location.search).get('planes') === 'off') return;
-  const RELAY = (window.__liveRelay || 'http://localhost:4011') + '/planes';
+  const OPT = window.DIORAMA_PLANES || {}, GROUND = !!OPT.ground;
+  const RELAY = (window.__liveRelay || 'http://localhost:4011') + '/planes' + (OPT.area ? `?area=${OPT.area}` : '');
+  const WHEELS = 4.8, SKIDS = 2.6; // model units (before scaling) from the engines' underside (plane) or the skids (helicopter) up to its origin
   let POLL_MS = 5000, LAG = 6; // s behind real time: the relay's poll plus about a second, from its answer
   const RETRY_MS = 60000;
   const COAST = 30; // s a plane is carried on along its track past its last fix
@@ -131,7 +137,7 @@
     const planes = new Map(); // hex -> {info, fixes: [{t, x, z, h, trk, gs, rate}], heading, roll}
     const toXZ = (lat, lng) => [(lng - ox) * MX, -(lat - oz) * MZ];
     function heightM(a) {
-      if (a.alt_ft === 'ground') return null;
+      if (a.alt_ft === 'ground') return GROUND ? 0 : null;
       if (typeof a.geom_ft === 'number') return a.geom_ft * FT - GEOID;
       if (typeof a.alt_ft === 'number') return a.alt_ft * FT;
       return null;
@@ -139,13 +145,15 @@
     function merge(json) {
       for (const a of json.aircraft || []) {
         const h = heightM(a);
-        if (h == null || a.track == null || a.gs_kt == null) continue;
+        const trk = a.track ?? a.hdg ?? (GROUND ? planes.get(a.hex)?.fixes.at(-1)?.trkDeg ?? 0 : null);
+        if (h == null || trk == null || (a.gs_kt == null && !GROUND)) continue;
         let p = planes.get(a.hex);
         if (!p) planes.set(a.hex, (p = { fixes: [], heading: null, roll: 0 }));
         p.info = a;
         if (p.fixes.length && p.fixes[p.fixes.length - 1].t >= a.t) continue;
         const [x, z] = toXZ(a.lat, a.lng);
-        p.fixes.push({ t: a.t, x, z, h, trk: (a.track * Math.PI) / 180, gs: a.gs_kt * KT, rate: ((a.rate || 0) * FT) / 60 });
+        const onGround = a.alt_ft === 'ground';
+        p.fixes.push({ t: a.t, x, z, h, trk: (trk * Math.PI) / 180, trkDeg: trk, gs: (a.gs_kt || 0) * KT, rate: onGround ? 0 : ((a.rate || 0) * FT) / 60, onGround });
         if (p.fixes.length > 4) p.fixes.shift();
       }
       const now = Date.now() / 1000;
@@ -172,9 +180,8 @@
       out.trk = a.trk + wrap(b.trk - a.trk) * u;
       out.gs = a.gs + (b.gs - a.gs) * u;
     }
-    function drawnY(h, x, z) {
-      const y = h <= TRUE_TO ? h * S : TRUE_TO * S + (CEILING - TRUE_TO * S) * (1 - Math.exp(-(h - TRUE_TO) / 2500));
-      return Math.max(y, ground(x, z) + 20);
+    function drawnY(h) {
+      return h <= TRUE_TO ? h * S : TRUE_TO * S + (CEILING - TRUE_TO * S) * (1 - Math.exp(-(h - TRUE_TO) / 2500));
     }
     const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
@@ -193,29 +200,31 @@
         const d = Math.hypot(st.x - ccx, st.z - ccz);
         if (d > SHOW) continue;
         const info = p.info, isHeli = info.cat === 'A7' || HELI_TYPES.has(info.type);
-        if (!isHeli && (info.gs_kt ?? 0) < 25) continue; // parked or taxiing
+        if (!GROUND && !isHeli && (info.gs_kt ?? 0) < 25) continue; // parked or taxiing: only the airport map shows those
         const m = used.get(hex)?.heli === isHeli ? used.get(hex) : model(isHeli);
         m.inUse = true;
         used.set(hex, m);
         // heading from the motion, banked by the turn rate (about 25 degrees in a standard airliner turn)
         stateAt(p, T + 1, st2);
-        const yaw = Math.atan2(-(st2.z - st.z), st2.x - st.x);
+        const moving = Math.hypot(st2.x - st.x, st2.z - st.z) > 1.5; // m/s; slower than that, face the reported heading
+        const yaw = moving ? Math.atan2(-(st2.z - st.z), st2.x - st.x) : Math.atan2(Math.cos(st.trk), Math.sin(st.trk));
         const turn = wrap(st2.trk - st.trk); // rad/s, clockwise positive
         const roll = Math.max(-0.55, Math.min(0.55, Math.atan((st.gs * turn) / 9.81)));
         p.roll += (roll - p.roll) * Math.min(1, dt * 2);
-        const y = drawnY(st.h, st.x, st.z);
-        const size = (isHeli ? 1 : SIZE[info.cat] ?? 1) * zoom * smooth((SHOW - d) / FADE);
+        const onGround = info.alt_ft === 'ground';
+        const size = (isHeli ? 1 : SIZE[info.cat] ?? 1) * (onGround ? Math.min(zoom, 1.4) : zoom) * smooth((SHOW - d) / FADE);
+        const y = Math.max(onGround ? 0 : drawnY(st.h, st.x, st.z), ground(st.x, st.z) + (isHeli ? SKIDS : WHEELS) * size);
         m.g.position.set(st.x, y, st.z);
-        m.g.rotation.set(isHeli ? 0 : p.roll, yaw, 0);
+        m.g.rotation.set(isHeli || onGround ? 0 : p.roll, yaw, 0);
         m.g.scale.setScalar(size);
-        if (m.rotor) m.rotor.rotation.y = (now * 18) % (Math.PI * 2);
+        if (m.rotor) m.rotor.rotation.y = onGround && st.gs < 1 ? 0 : (now * 18) % (Math.PI * 2);
         const al = AIRLINES[(info.flight || '').slice(0, 3)] || AIRLINES[(info.flight || '').slice(0, 4)];
         m.finMat.color.set(al ? al[2] : isHeli ? '#e8e6e0' : TAILS[parseInt(hex, 16) % TAILS.length]);
         const sh = D.terrain ? D.terrain.shadow(st.x, st.z, sx, sz, y, 0.75) : [st.x - sx * (y - 0.75), 0.75, st.z - sz * (y - 0.75)];
         m.sh.position.set(sh[0], sh[1], sh[2]);
         m.sh.rotation.y = yaw;
         m.sh.scale.setScalar(size * (isHeli ? 0.4 : 1));
-        drawn.push({ hex, info, x: st.x, y, z: st.z, h: st.h, gs: st.gs, trk: st.trk, heli: isHeli, airline: al });
+        drawn.push({ hex, info, x: st.x, y, z: st.z, h: st.h, gs: st.gs, trk: st.trk, heli: isHeli, airline: al, onGround });
       }
       for (const m of pool) m.g.visible = m.sh.visible = m.inUse;
       for (const [hex, m] of used) if (!m.inUse) used.delete(hex);
@@ -241,13 +250,14 @@
     }
     function caption() {
       const over = drawn.filter((p) => Math.hypot(p.x - ccx, p.z - ccz) <= data.circle[2]).length;
+      const what = GROUND ? 'none at the airport right now' : 'none over the map right now';
       const a = document.createElement('a');
       a.href = source.link || 'https://adsb.fi/';
       a.target = '_blank';
       a.rel = 'noopener';
       a.textContent = source.source || 'adsb.fi';
       a.style.color = 'inherit';
-      credit.replaceChildren(` · Planes: live from `, a, over ? '' : ', none over the map right now');
+      credit.replaceChildren(` · Planes: live from `, a, over ? '' : `, ${what}`);
     }
 
     let timer = 0, source = {};
@@ -294,6 +304,11 @@
       const type = [TYPES[i.type] || i.type || (p.heli ? 'Helicopter' : ''), i.reg].filter(Boolean).join(' · ');
       const climb = (i.rate || 0) > 300 ? ', climbing' : (i.rate || 0) < -300 ? ', descending' : '';
       const ft = p.h / FT, deg = (((p.trk * 180) / Math.PI) % 360 + 360) % 360;
+      if (p.onGround) {
+        const kmh = p.gs * 3.6;
+        return [[title], ...(type ? [[type, true]] : []),
+          [kmh > 60 ? `On the runway, ${fmt(kmh)} km/h` : kmh > 4 ? `Taxiing, ${fmt(kmh)} km/h` : 'Parked', true]];
+      }
       return [[title], ...(type ? [[type, true]] : []),
         [`${fmt(ft)} ft (${fmt(p.h)} m)${climb}`, true],
         [`${fmt(p.gs * 3.6)} km/h, heading ${COMPASS[Math.round(deg / 22.5) % 16]}`, true]];

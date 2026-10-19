@@ -8,16 +8,20 @@
 // labels, plane shadows and the camera's target height. If the files are missing (the published artifact) or
 // the page has ?terrain=off, load() returns null and city.js draws the flat map exactly as before.
 (() => {
-  const T = (window.__terrain = { on: false, load: async () => null });
-  if (new URLSearchParams(location.search).get('terrain') === 'off') return;
+  // load() also keeps the three.js classes city.js hands it (window.__terrain.K), for other add-on layers.
+  const T = (window.__terrain = { on: false, load: async (data, K) => ((T.K = K), null) });
+  // A page can name its own terrain files (globalThis.DIORAMA_TERRAIN, default 'terrain') or have none (false).
+  const NAME = globalThis.DIORAMA_TERRAIN ?? 'terrain';
+  if (new URLSearchParams(location.search).get('terrain') === 'off' || NAME === false) return;
   const files = Promise.all([
-    fetch('terrain.json').then((r) => (r.ok ? r.json() : null)),
-    fetch('terrain.bin').then((r) => (r.ok ? r.arrayBuffer() : null)),
-    new URLSearchParams(location.search).get('bridges') === 'off' ? null // ?bridges=off: the plain decks
+    fetch(`${NAME}.json`).then((r) => (r.ok ? r.json() : null)),
+    fetch(`${NAME}.bin`).then((r) => (r.ok ? r.arrayBuffer() : null)),
+    new URLSearchParams(location.search).get('bridges') === 'off' || globalThis.DIORAMA_BRIDGES === false ? null // the plain decks
       : fetch('bridges.json').then((r) => (r.ok ? r.json() : null), () => null), // the hand-built bridges (bridges.js)
   ]).catch(() => [null, null, null]);
 
   T.load = async (data, K) => {
+    T.K = K;
     const [meta, buf, bridges] = await files;
     if (!meta || !buf) return null;
     const t0 = performance.now();

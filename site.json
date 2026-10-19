@@ -48,7 +48,7 @@
         ],
         [
           "Scale",
-          "57,008 buildings, 136,000 trees and 14 hand-built bridges in a 5 km circle"
+          "57,008 buildings, 136,000 trees and 14 hand-built bridges in a 5 km circle, plus the airport"
         ],
         [
           "Built with",
@@ -61,6 +61,7 @@
           "p": [
             "Drag to orbit, scroll to zoom, and hover or click a building to see its height and floors. The sun slider moves the shadows from 6am to 5:15pm, and the photo view frames Eagle Street.",
             "The CityCats and ferries sit at their real GPS positions, and the planes are the real flights passing over Brisbane, so hover one to see its airline, type, height and speed. The cars and buses are simulated.",
+            "The Airport button opens a second map of Brisbane Airport, where you can watch the planes land, take off and taxi to the gates.",
             "Buildings and hills are drawn 1.6 times taller than they really are, so the skyline still reads from a distance."
           ]
         },

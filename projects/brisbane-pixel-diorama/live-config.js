@@ -23,6 +23,8 @@ window.__liveRelay = new URLSearchParams(location.search).get('live') ||
         : on.planes
           ? 'the planes are live, and the traffic and CityCats are simulated'
           : null;
-    p.textContent = clause ? base.replace('the traffic, CityCats and planes are simulated', clause) : base;
+    const own = window.DIORAMA_INTRO; // {sim, planes}: this page's own simulated and live-planes wording
+    if (own) p.textContent = base.replace(own.sim, on.planes ? own.planes : own.sim);
+    else p.textContent = clause ? base.replace('the traffic, CityCats and planes are simulated', clause) : base;
   };
 })();
