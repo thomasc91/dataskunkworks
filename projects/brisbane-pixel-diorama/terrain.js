@@ -426,6 +426,16 @@
           }
       return best;
     }
+    // The top of the highest bridge deck within r metres of a point, or null (the live trains ride on it).
+    function deckAt(x, z, r = 12) {
+      let top = null;
+      const gx = Math.floor(x / 16), gz = Math.floor(z / 16);
+      for (let a = gx - 1; a <= gx + 1; a++)
+        for (let b = gz - 1; b <= gz + 1; b++)
+          for (const s of cells.get(a * 100000 + b) || [])
+            if ((SX[s] - x) ** 2 + (SZ[s] - z) ** 2 < r * r && !(top >= SN[s] + 0.8)) top = SN[s] + 0.8;
+      return top;
+    }
 
     // --- Traffic: streets split so the cars follow the ground; on bridges they follow the new decks ---------
     function densify(edges) {
@@ -544,7 +554,7 @@
 
     const api = {
       scale: S, h, hs, isWater: water, inWater, treeY, hc, ray, shadow, ground, water: waterMesh, roads, bref, bmin,
-      deck, densify, carY, models, ownsKpb: !!(kpbModel && data.kpb), storyChord: MODELS && bridgeList ? MODELS.storyChord : null,
+      deck, deckAt, densify, carY, models, ownsKpb: !!(kpbModel && data.kpb), storyChord: MODELS && bridgeList ? MODELS.storyChord : null,
       mesh: null, lo, hi, meta,
       stats: { bridges: 0, riverBridges: 0 },
     };
