@@ -11,9 +11,12 @@
 // 1,000 drawn metres, so a jet at 10,000 ft still flies over the map instead of off the top of the screen. Its
 // shadow falls on the ground below its real position, and hovering it gives its real altitude.
 //
-// The planes and their shadows are the renderer's own simulated-plane models (a small helicopter is built here),
-// with the tail in the airline's colour. While the relay answers, the simulated planes stop; if it doesn't, they
-// carry on as before. ?planes=off keeps the simulation.
+// Each aircraft is drawn with a model for its type (aircraft.js, since 20 Oct 2026: light aircraft, twins,
+// turboprops, regional and business jets, narrowbodies, widebodies, four-engined jets, airlifters and helicopters,
+// from the ICAO type code the relay passes on, or the ADS-B category), with its tail, stripe or cabin in the
+// operator's colour and its propellers and rotors turning. Without aircraft.js every aircraft is the renderer's
+// airliner. While the relay answers, the simulated planes stop; if it doesn't, they carry on as before.
+// ?planes=off keeps the simulation.
 //
 // The hover card also says where a flight is going: the relay looks each callsign up in adsbdb.com's route
 // database and only passes a route on when the plane is near its path. For helicopters and private aircraft it
@@ -26,7 +29,7 @@
   if (new URLSearchParams(location.search).get('planes') === 'off') return;
   const OPT = window.DIORAMA_PLANES || {}, GROUND = !!OPT.ground;
   const RELAY = (window.__liveRelay || 'http://localhost:4011') + '/planes' + (OPT.area ? `?area=${OPT.area}` : '');
-  const WHEELS = 4.8, SKIDS = 2.6; // model units (before scaling) from the engines' underside (plane) or the skids (helicopter) up to its origin
+  const WHEELS = 4.8; // the renderer's airliner: model units from the engines' underside up to its origin (aircraft.js's models carry their own)
   let POLL_MS = 5000, LAG = 6; // s behind real time: the relay's poll plus about a second, from its answer
   const RETRY_MS = 60000;
   const COAST = 30; // s a plane is carried on along its track past its last fix
@@ -49,8 +52,11 @@
     CES: ['China Eastern', 'MU', '#1c3f94'], CSN: ['China Southern', 'CZ', '#1e70b8'], KAL: ['Korean Air', 'KE', '#7fb6dd'],
     AIC: ['Air India', 'AI', '#a3122d'], JAL: ['Japan Airlines', 'JL', '#cc0000'], ANA: ['All Nippon Airways', 'NH', '#13448f'],
     TGW: ['Scoot', 'TR', '#ffd400'], QJE: ['QantasLink', 'QF', '#e0001b'], FDX: ['FedEx', 'FX', '#4d148c'],
-    POL: ['Queensland Police', '', '#1f4e9c'], RSCU: ['LifeFlight', '', '#d8342c'],
+    POL: ['Queensland Police', '', '#1f4e9c'], RSCU: ['LifeFlight', '', '#d8342c'], ASY: ['Royal Australian Air Force', '', '#5d6a72'],
+    RFD: ['Royal Flying Doctor Service', '', '#c8102e'],
   };
+  // callsigns with no three-letter prefix: the Royal Flying Doctor Service flies as FD and a number
+  const operatorOf = (flight = '') => AIRLINES[flight.slice(0, 3)] || AIRLINES[flight.slice(0, 4)] || (/^FD\d/.test(flight) ? AIRLINES.RFD : null);
   // Aircraft types by ICAO type code.
   const TYPES = {
     B738: 'Boeing 737-800', B38M: 'Boeing 737 MAX 8', B737: 'Boeing 737-700', B739: 'Boeing 737-900', B712: 'Boeing 717',
@@ -64,6 +70,23 @@
     PA28: 'Piper Cherokee', SR22: 'Cirrus SR22', EC35: 'Airbus H135', EC45: 'Airbus H145', EC30: 'Airbus H130',
     A139: 'AW139', A169: 'AW169', B412: 'Bell 412', B429: 'Bell 429', B407: 'Bell 407', B06: 'Bell 206', AS50: 'Airbus AS350',
     R44: 'Robinson R44', R22: 'Robinson R22', S76: 'Sikorsky S-76', H160: 'Airbus H160', BK17: 'BK 117',
+    C150: 'Cessna 150', C152: 'Cessna 152', C162: 'Cessna Skycatcher', C177: 'Cessna Cardinal', C206: 'Cessna 206', C210: 'Cessna Centurion',
+    GA8: 'GippsAero Airvan', P28A: 'Piper Warrior', P28R: 'Piper Arrow', PA44: 'Piper Seminole', PA34: 'Piper Seneca', P32R: 'Piper Saratoga',
+    DA40: 'Diamond DA40', DA42: 'Diamond Twin Star', DA62: 'Diamond DA62', BE36: 'Beechcraft Bonanza', BE58: 'Beechcraft Baron', BE76: 'Beechcraft Duchess',
+    M20P: 'Mooney M20', TB20: 'Socata Trinidad', TBM9: 'Daher TBM 900', TBM8: 'Daher TBM 850', PC21: 'Pilatus PC-21', PC9: 'Pilatus PC-9',
+    C310: 'Cessna 310', C414: 'Cessna Chancellor', C421: 'Cessna Golden Eagle', P68: 'Vulcanair P68', B190: 'Beechcraft 1900', BE9L: 'King Air 90',
+    SW4: 'Fairchild Metro', JS32: 'Jetstream 32', JS41: 'Jetstream 41', E120: 'Embraer Brasilia', F50: 'Fokker 50', DHC6: 'Twin Otter',
+    D228: 'Dornier 228', C27J: 'C-27J Spartan', C130: 'C-130 Hercules', C30J: 'C-130J Hercules', A400: 'Airbus A400M', C17: 'C-17 Globemaster',
+    P8: 'P-8 Poseidon', CRJ2: 'Bombardier CRJ200', CRJ7: 'Bombardier CRJ700', CRJ9: 'Bombardier CRJ900', E135: 'Embraer ERJ 135',
+    E145: 'Embraer ERJ 145', GLEX: 'Bombardier Global Express', GL5T: 'Bombardier Global 5000', GL7T: 'Bombardier Global 7500', GLF5: 'Gulfstream G550',
+    GLF6: 'Gulfstream G650', G280: 'Gulfstream G280', CL35: 'Challenger 350', CL60: 'Challenger 604', C680: 'Citation Sovereign',
+    C68A: 'Citation Latitude', C56X: 'Citation Excel', C25A: 'Citation CJ2', C25B: 'Citation CJ3', C25C: 'Citation CJ4', C510: 'Citation Mustang',
+    LJ45: 'Learjet 45', LJ75: 'Learjet 75', E55P: 'Embraer Phenom 300', E50P: 'Embraer Phenom 100', FA7X: 'Dassault Falcon 7X',
+    F2TH: 'Dassault Falcon 2000', H25B: 'Hawker 800', B752: 'Boeing 757-200', B753: 'Boeing 757-300', A318: 'Airbus A318', A319: 'Airbus A319',
+    B736: 'Boeing 737-600', B39M: 'Boeing 737 MAX 9', E170: 'Embraer E170', E175: 'Embraer E175', E195: 'Embraer E195', E290: 'Embraer E190-E2',
+    E295: 'Embraer E195-E2', BCS1: 'Airbus A220-100', A338: 'Airbus A330-800', B77L: 'Boeing 777-200LR', B748: 'Boeing 747-8', A343: 'Airbus A340-300',
+    R66: 'Robinson R66', AS55: 'Airbus AS355', EC20: 'Airbus H120', A109: 'AW109', A119: 'AW119', AS65: 'Airbus Dauphin', S92: 'Sikorsky S-92',
+    B212: 'Bell 212', UH1: 'Bell UH-1', NH90: 'NH90', H60: 'Black Hawk', EC25: 'Airbus H225', EC75: 'Airbus H175', H47: 'CH-47 Chinook', TIGR: 'Tiger',
   };
   // Helicopters: ADS-B category A7 (rotorcraft), or an ICAO helicopter type, for the ones that send no category
   const HELI_TYPES = new Set(['A109', 'A119', 'A129', 'A139', 'A149', 'A169', 'A189', 'AS32', 'AS3B', 'AS50', 'AS55', 'AS65', 'B06', 'B06T',
@@ -86,52 +109,51 @@
     const Group = ref.g.constructor, Mesh = body.constructor, Geometry = body.geometry.constructor;
     const Attr = body.geometry.attributes.position.constructor, Color = fin.material.color.constructor;
     const layerMask = body.layers.mask; // the moving layer
-    // A helicopter, about twice real size like the planes (they're drawn big enough to see from afar): the cabin
-    // in the operator's colour, the rest grey, and a rotor that turns.
-    const heli = (() => {
-      const geo = (boxes) => {
-        const pos = [], nor = [], col = [];
-        for (const [x0, y0, z0, x1, y1, z1, c] of boxes) {
-          const v = (x, y, z) => [x ? x1 : x0, y ? y1 : y0, z ? z1 : z0];
-          const faces = [[[1, 0, 0], [1, 1, 0], [1, 1, 1], [1, 0, 1], [1, 0, 0]], [[0, 0, 0], [0, 0, 1], [0, 1, 1], [0, 1, 0], [-1, 0, 0]],
-            [[0, 1, 0], [0, 1, 1], [1, 1, 1], [1, 1, 0], [0, 1, 0]], [[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1], [0, -1, 0]],
-            [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1], [0, 0, 1]], [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0], [0, 0, -1]]];
-          for (const [a, b, c2, d, n] of faces) for (const p of [a, b, c2, a, c2, d]) pos.push(...v(...p)), nor.push(...n), col.push(c, c, c);
-        }
-        const g = new Geometry();
-        g.setAttribute('position', new Attr(new Float32Array(pos), 3));
-        g.setAttribute('normal', new Attr(new Float32Array(nor), 3));
-        g.setAttribute('color', new Attr(new Float32Array(col), 3));
-        return g;
-      };
-      return {
-        livery: geo([[-3, -1.5, -1.4, 3.6, 1.6, 1.4, 1], [-10, 0.6, -0.25, -8.6, 2.8, 0.25, 1]]), // cabin and fin
-        body: geo([
-          [3.6, -1.2, -1.2, 4.6, 1.0, 1.2, 0.35], // windscreen
-          [-9.5, -0.2, -0.35, -3, 0.6, 0.35, 0.9], // tail boom
-          [-2.6, -2.5, -1.75, 3.2, -2.2, -1.45, 0.4], [-2.6, -2.5, 1.45, 3.2, -2.2, 1.75, 0.4], // skids
-          [-0.4, 1.6, -0.4, 0.4, 2.3, 0.4, 0.4], // rotor mast
-        ]),
-        rotor: geo([[-11, 2.3, -0.35, 11, 2.5, 0.35, 0.3], [-0.35, 2.3, -11, 0.35, 2.5, 11, 0.3]]),
-      };
-    })();
-
+    // Models for each aircraft type (aircraft.js): the body in the renderer's own plane material (vertex colours), the
+    // livery in the tail colour, spinning propellers and rotors, and a pixel shadow. Without aircraft.js, the
+    // renderer's airliner stands in for everything.
+    const AC = window.__aircraft;
+    const geoOf = (a, withColour = true) => {
+      const g = new Geometry();
+      g.setAttribute('position', new Attr(new Float32Array(a.p), 3));
+      g.setAttribute('normal', new Attr(new Float32Array(a.n), 3));
+      if (withColour) g.setAttribute('color', new Attr(new Float32Array(a.c || a.p.map(() => 1)), 3));
+      g.computeBoundingSphere();
+      return g;
+    };
+    const geos = new Map(); // type -> geometries, shared by every aircraft of that type
+    function geometriesFor(key) {
+      if (!geos.has(key)) {
+        const m = AC.build(key);
+        geos.set(key, { body: geoOf(m.body), livery: geoOf(m.livery, false), shadow: geoOf(m.shadow, false), base: m.base,
+          spin: m.spin.map((s) => ({ geo: geoOf(s), axis: s.axis, at: s.at, speed: s.speed, rot: s.rot })) });
+      }
+      return geos.get(key);
+    }
     const pool = [], used = new Map(); // hex -> model
-    function model(isHeli) {
-      let m = pool.find((p) => !p.inUse && p.heli === isHeli);
+    function model(key) {
+      let m = pool.find((p) => !p.inUse && p.key === key);
       if (!m) {
         const g = new Group();
         g.rotation.order = 'YXZ';
         const finMat = fin.material.clone();
-        if (isHeli) {
-          const r = new Mesh(heli.rotor, body.material);
-          g.add(new Mesh(heli.body, body.material), new Mesh(heli.livery, finMat), r);
-          m = { g, rotor: r, finMat, heli: true };
+        if (AC && key) {
+          const G = geometriesFor(key);
+          g.add(new Mesh(G.body, body.material), new Mesh(G.livery, finMat));
+          const spin = G.spin.map((s) => {
+            const mesh = new Mesh(s.geo, body.material);
+            mesh.position.set(...s.at);
+            if (s.rot) mesh.rotation.set(...s.rot);
+            g.add(mesh);
+            return { mesh, axis: s.axis, speed: s.speed };
+          });
+          m = { g, finMat, key, spin, base: G.base };
+          m.sh = new Mesh(G.shadow, sim.shadowMat);
         } else {
           g.add(new Mesh(body.geometry, body.material), new Mesh(fin.geometry, finMat));
-          m = { g, finMat, heli: false };
+          m = { g, finMat, key, spin: [], base: WHEELS };
+          m.sh = new Mesh(ref.sh.geometry, sim.shadowMat);
         }
-        m.sh = new Mesh(ref.sh.geometry, sim.shadowMat);
         for (const o of [g, m.sh]) o.traverse((c) => { c.layers.mask = layerMask; c.castShadow = false; c.frustumCulled = false; });
         D.life.root.add(g, m.sh);
         pool.push(m);
@@ -207,9 +229,10 @@
         stateAt(p, T, st);
         const d = Math.hypot(st.x - ccx, st.z - ccz);
         if (d > SHOW) continue;
-        const info = p.info, isHeli = info.cat === 'A7' || HELI_TYPES.has(info.type);
-        if (!GROUND && !isHeli && (info.gs_kt ?? 0) < 25) continue; // parked or taxiing: only the airport map shows those
-        const m = used.get(hex)?.heli === isHeli ? used.get(hex) : model(isHeli);
+        const info = p.info, spec = AC ? AC.specFor({ ...info, heli: HELI_TYPES.has(info.type) }) : null;
+        const isHeli = spec ? spec.heli : info.cat === 'A7' || HELI_TYPES.has(info.type), key = spec?.key ?? null;
+        if (!GROUND && !isHeli && (info.gs_kt ?? 0) < 25) continue; // parked or taxiing: not drawn
+        const m = used.get(hex)?.key === key ? used.get(hex) : model(key);
         m.inUse = true;
         used.set(hex, m);
         // heading from the motion, banked by the turn rate (about 25 degrees in a standard airliner turn)
@@ -220,18 +243,19 @@
         const roll = Math.max(-0.55, Math.min(0.55, Math.atan((st.gs * turn) / 9.81)));
         p.roll += (roll - p.roll) * Math.min(1, dt * 2);
         const onGround = info.alt_ft === 'ground';
-        const size = (isHeli ? 1 : SIZE[info.cat] ?? 1) * (onGround ? Math.min(zoom, 1.4) : zoom) * smooth((SHOW - d) / FADE);
-        const y = Math.max(onGround ? 0 : drawnY(st.h, st.x, st.z), ground(st.x, st.z) + (isHeli ? SKIDS : WHEELS) * size);
+        const size = (key ? 1 : SIZE[info.cat] ?? 1) * (onGround ? Math.min(zoom, 1.4) : zoom) * smooth((SHOW - d) / FADE);
+        const y = Math.max(onGround ? 0 : drawnY(st.h, st.x, st.z), ground(st.x, st.z) + m.base * size);
         m.g.position.set(st.x, y, st.z);
         m.g.rotation.set(isHeli || onGround ? 0 : p.roll, yaw, 0);
         m.g.scale.setScalar(size);
-        if (m.rotor) m.rotor.rotation.y = onGround && st.gs < 1 ? 0 : (now * 18) % (Math.PI * 2);
-        const al = AIRLINES[(info.flight || '').slice(0, 3)] || AIRLINES[(info.flight || '').slice(0, 4)];
+        const still = onGround && st.gs < 1 && (info.gs_kt ?? 0) < 2; // parked: propellers and rotors stopped
+        for (const s of m.spin) s.mesh.rotation[s.axis] = still ? 0 : (now * s.speed) % (Math.PI * 2);
+        const al = operatorOf(info.flight || '');
         m.finMat.color.set(al ? al[2] : isHeli ? '#e8e6e0' : TAILS[parseInt(hex, 16) % TAILS.length]);
         const sh = D.terrain ? D.terrain.shadow(st.x, st.z, sx, sz, y, 0.75) : [st.x - sx * (y - 0.75), 0.75, st.z - sz * (y - 0.75)];
         m.sh.position.set(sh[0], sh[1], sh[2]);
         m.sh.rotation.y = yaw;
-        m.sh.scale.setScalar(size * (isHeli ? 0.4 : 1));
+        m.sh.scale.setScalar(size);
         drawn.push({ hex, info, x: st.x, y, z: st.z, h: st.h, gs: st.gs, trk: st.trk, heli: isHeli, airline: al, onGround });
       }
       for (const m of pool) m.g.visible = m.sh.visible = m.inUse;

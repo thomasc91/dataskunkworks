@@ -17,7 +17,7 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferrie
 | `landmarks.js`, `landmarks.json` | Hand-built landmarks, and where each one goes |
 | `ride.js` | The ride replay, from a GPX file |
 | `towers.js` | Brisbane's 21 tallest towers reshaped from photos, and the new ones the map lacked |
-| `live-config.js`, `live-ferries.js`, `live-trains.js`, `live-planes.js` | The live ferries, trains and planes, and which relay they read |
+| `live-config.js`, `live-ferries.js`, `live-trains.js`, `live-planes.js`, `aircraft.js` | The live ferries, trains and planes, and which relay they read |
 | `rail.json` | The railway: 115 km of track and the station platforms, and TransLink's stop ids for naming each train's next stop |
 | `live-graph.js` | Following the tracks and roads between GPS fixes, for the trains and buses |
 | `live-buses.js`, `buses.json` | The live buses and Metro, and the 382 km of roads and busways they follow |
@@ -37,6 +37,7 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 - **Ferries:** the GPS position of every CityCat, CityHopper and cross-river ferry, from TransLink's open feed. Each boat is drawn about a minute behind real time, gliding between fixes along the river.
 - **Trains:** every Queensland Rail train on the map, from TransLink's open feed, which reports each train's GPS position about every 20 seconds. Each train is drawn 45 seconds behind real time and follows the track between fixes, taking the right line through junctions, over the bridges and into the tunnels. The model had no railway, so the tracks and platforms come from OpenStreetMap. Hover a train for where it's going, where it came from and its next stop.
 - **Planes:** every aircraft within about 9 km of West End, from adsb.lol's open ADS-B data (adsb.fi's when adsb.lol doesn't answer), drawn about 16 seconds behind real time on their real tracks, banking into turns. adsb.lol allows about 500 requests a day, roughly two hours of viewing; after that the map flies simulated planes until the limit resets. Up to 300 m they're at true scale; higher ones are eased down so they still fly over the map, and their shadows mark where they really are.
+- **Aircraft:** each one is drawn as its type, from Cessnas and Robinson helicopters to Dash 8s, business jets, 737s, A350s and the occasional Hercules or Chinook, with its operator's colours and its propellers and rotors turning.
 - **Where each flight is going:** the relay looks each callsign up in [adsbdb.com](https://www.adsbdb.com/)'s route database, and the hover card shows the route when the plane is near its path. Helicopters and private aircraft show their registered owner.
 - **Buses and Metro:** every bus and Brisbane Metro vehicle on the map, from TransLink's bus feed, drawn 50 seconds behind real time and following the roads and busways between fixes, keeping to one-way streets. The Metro's three sections bend round corners. Hover one for its route, the route's two ends and its next stop.
 - **Ships:** every vessel sending AIS round Brisbane, from aisstream.io, sized and coloured by its type. They appear once the relay has an aisstream.io key.
