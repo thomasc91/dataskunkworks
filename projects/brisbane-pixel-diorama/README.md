@@ -26,9 +26,6 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferrie
 | `live-ships.js` | The live ships |
 | `roll.js`, `props.json`, `streets.json` | Roll mode, the 9,484 bits of street furniture it starts on, and the street names under its minimap |
 | `roll-game.js`, `roll-sound.js` | Roll mode's levels, collection, combos, bonuses and best times, and its sounds |
-| `airport-props.json`, `airport-streets.json` | The airport level's street furniture and street names |
-| `airport.html`, `airport.json` | A second map: everything within 4.5 km of Brisbane Airport (1.8 MB) |
-| `airport.js`, `airport-features.json` | The airfield: runways with their markings, taxiways and aprons |
 
 The original build scripts that made `westend.json` weren't kept.
 
@@ -38,7 +35,7 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 
 - **Ferries:** the GPS position of every CityCat, CityHopper and cross-river ferry, from TransLink's open feed. Each boat is drawn about a minute behind real time, gliding between fixes along the river.
 - **Trains:** every Queensland Rail train on the map, from TransLink's open feed, which reports each train's GPS position about every 20 seconds. Each train is drawn 45 seconds behind real time and follows the track between fixes, taking the right line through junctions, over the bridges and into the tunnels. The model had no railway, so the tracks and platforms come from OpenStreetMap. Hover a train for where it's going, where it came from and its next stop.
-- **Planes:** every aircraft within about 9 km of West End, from adsb.lol's open ADS-B data, drawn about 16 seconds behind real time on their real tracks, banking into turns. adsb.lol allows about 500 requests a day, roughly two hours of viewing; after that the map flies simulated planes until the limit resets. Up to 300 m they're at true scale; higher ones are eased down so they still fly over the map, and their shadows mark where they really are.
+- **Planes:** every aircraft within about 9 km of West End, from adsb.lol's open ADS-B data (adsb.fi's when adsb.lol doesn't answer), drawn about 16 seconds behind real time on their real tracks, banking into turns. adsb.lol allows about 500 requests a day, roughly two hours of viewing; after that the map flies simulated planes until the limit resets. Up to 300 m they're at true scale; higher ones are eased down so they still fly over the map, and their shadows mark where they really are.
 - **Where each flight is going:** the relay looks each callsign up in [adsbdb.com](https://www.adsbdb.com/)'s route database, and the hover card shows the route when the plane is near its path. Helicopters and private aircraft show their registered owner.
 - **Buses and Metro:** every bus and Brisbane Metro vehicle on the map, from TransLink's bus feed, drawn 50 seconds behind real time and following the roads and busways between fixes, keeping to one-way streets. The Metro's three sections bend round corners. Hover one for its route, the route's two ends and its next stop.
 - **Ships:** every vessel sending AIS round Brisbane, from aisstream.io, sized and coloured by its type. They appear once the relay has an aisstream.io key.
@@ -62,11 +59,7 @@ Besides the 14 river bridges, some landmarks are hand-built on their real places
 
 The Roll button turns the map into a Katamari Damacy-style game. You push a sticky ball round Brisbane, starting on Boundary Street in West End, and anything smaller than it sticks to it: people, street furniture, ibis, cane toads, magpies and kangaroos first, then cars and trees, houses, CityCats, apartment blocks, the CBD towers and finally the Brisbane Skytower. Bigger things bounce it back, magpies swoop it while it's small, kangaroos bolt, and the river stops it until it's 80 m across. Use the arrow keys or WASD, or drag on a touch screen; scroll or pinch to zoom and right-drag to look round. A minimap shows the streets round the ball and the street it's on. Everything it rolls up stays gone until the page reloads.
 
-There are six levels: rolling up the whole city to the Skytower, a South Bank sprint, a kangaroo round-up at Toowong Cemetery, rush hour in the CBD, a race over the river, and plane spotting at the airport. Finished levels go on a best-times board anyone can post to with three initials. A collection book keeps every kind of thing you've rolled up, five of a kind in a row earn a combo, a real bus nearby can become the wanted bus for a bonus, rain makes the roads slippery, crashes knock things loose, and it all has sound.
-
-## Brisbane Airport
-
-The Airport button opens a second map, everything within 4.5 km of Brisbane Airport's runways, built the same way. Its runways carry their real markings, and the live planes include those on the ground: taxiing, lined up on the runway and parked at the gates. The airfield comes from OpenStreetMap; the ground is flat, as the airport is.
+There are five levels: rolling up the whole city to the Skytower, a South Bank sprint, a kangaroo round-up at Toowong Cemetery, rush hour in the CBD, and a race over the river. Finished levels go on a best-times board anyone can post to with three initials. A collection book keeps every kind of thing you've rolled up, five of a kind in a row earn a combo, a real bus nearby can become the wanted bus for a bonus, rain makes the roads slippery, crashes knock things loose, and it all has sound.
 
 ## Running it
 
@@ -85,5 +78,4 @@ Then open http://localhost:8000/. The fonts come from Google Fonts; offline, it 
 - Ferry, train and bus positions: TransLink SEQ GTFS-RT, CC BY 4.0.
 - Bus stop names, traffic signal data and bike counts: Brisbane City Council open data, CC BY 4.0.
 - Weather: [Open-Meteo](https://open-meteo.com/), CC BY 4.0. Ships: AIS from [aisstream.io](https://aisstream.io/).
-- Aircraft positions: [adsb.lol](https://adsb.lol/) open data. Flight routes and aircraft owners: [adsbdb.com](https://www.adsbdb.com/).
-- The airport map and airfield: © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.
+- Aircraft positions: [adsb.lol](https://adsb.lol/) open data, and [adsb.fi](https://adsb.fi/) open data when adsb.lol doesn't answer. Flight routes and aircraft owners: [adsbdb.com](https://www.adsbdb.com/).

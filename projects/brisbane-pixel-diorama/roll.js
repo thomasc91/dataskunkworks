@@ -730,17 +730,6 @@
           }
         }
       }
-      // aircraft on the ground (the airport map): jets about 45 m, helicopters 15
-      const LP = window.__livePlanes;
-      if (LP?.gone) for (const d of LP.drawn) {
-        if (!d.onGround || LP.gone.has(d.hex)) continue;
-        const size = d.heli ? 15 : 45;
-        if (size > cap || Math.hypot(d.x - px, d.z - pz) > reach + size / 3) continue;
-        LP.gone.add(d.hex); stats.plane = (stats.plane || 0) + 1;
-        const nm = [d.airline?.[0], (d.info?.flight || '').trim()].filter(Boolean).join(' ') || (d.heli ? 'a helicopter' : 'a plane');
-        stick('box', d.x, d.y + 3, d.z, [size, size * 0.18, size * 0.85], [0.95, 0.95, 0.96], size * size * 4, nm, 'plane');
-        grow(size * size * 4); note(nm, size + 40, 'plane');
-      }
       // things a crash knocked loose, once they've landed
       for (const o of loose) {
         if (o.gone || o.flying || o.size > cap || Math.hypot(o.x - px, o.z - pz) > reach + o.size * 0.3) continue;

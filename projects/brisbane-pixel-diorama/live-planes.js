@@ -274,7 +274,7 @@
       clearTimeout(timer);
       if (document.hidden) { timer = setTimeout(poll, POLL_MS); return; }
       try {
-        const r = await fetch(RELAY, { cache: 'no-store' });
+        const r = await fetch(RELAY, { cache: 'no-store', signal: AbortSignal.timeout(20000) }); // a stuck request mustn't stop the polling
         if (!r.ok) throw new Error(r.status);
         const json = await r.json();
         if (json.error && !json.aircraft?.length) throw new Error(json.error);

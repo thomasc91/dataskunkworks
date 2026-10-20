@@ -4,8 +4,7 @@
 // roll-sound.js the sounds. It loads before roll.js, so it can hand it the level (window.__rollLevel), then talks to
 // it through window.__roll's events once the map is ready.
 //
-// - Levels: ?mode=roll opens a menu of levels; each is ?mode=roll&level=<id>, on its own map (the airport level runs
-//   on airport.html). A level has a start, a goal (a size, a count of something, a place to reach, or the Skytower)
+// - Levels: ?mode=roll opens a menu of levels; each is ?mode=roll&level=<id>. A level has a start, a goal (a size, a count of something, a place to reach, or the Skytower)
 //   and usually a time limit. Finishing shows your time, your best on this device, and the best ten times anyone has
 //   posted (the public relay keeps them: live/worker.js /scores), and you can post yours with three initials.
 // - The collection book: every kind of thing you've ever rolled up, on this device (localStorage): the landmarks,
@@ -16,7 +15,6 @@
 (() => {
   const Q = new URLSearchParams(location.search);
   if (Q.get('mode') !== 'roll') return;
-  const PAGE = /airport\.html$/.test(location.pathname) ? 'airport' : 'westend';
   const SCORES = (window.__scoresUrl || 'https://brisbane-diorama-live.thomas-a-colin.workers.dev') + '/scores';
   const LEVELS = [
     { id: 'free', page: 'westend', title: 'Roll up Brisbane', blurb: 'Start small on Boundary Street and keep rolling until you take the Brisbane Skytower.', goal: { finish: true } },
@@ -28,22 +26,14 @@
       start: [-27.4699, 153.0253], goal: { size: 100 }, limit: 360 },
     { id: 'river', page: 'westend', title: 'Over the river', blurb: 'Get from Musgrave Park to the City Botanic Gardens in four minutes. Find a bridge, or grow big enough to wade.',
       start: [-27.4797, 153.0147], r0: 3, goal: { reach: [-27.4755, 153.0298], radius: 80, place: 'the Botanic Gardens' }, limit: 240 },
-    { id: 'airport', page: 'airport', title: 'Plane spotter', blurb: 'At Brisbane Airport, roll up a plane on the ground in six minutes (or grow to 60 m across if none are in).',
-      start: [-27.3858, 153.1182], r0: 3, goal: { count: 'plane', n: 1, what: 'Planes', orSize: 60 }, limit: 360,
-      props: 'airport-props.json', streets: 'airport-streets.json', crowds: [[-27.38546, 153.12093], [-27.4029, 153.11099]], finishOn: '' },
   ];
   const level = LEVELS.find((l) => l.id === Q.get('level'));
-  if (level && level.page !== PAGE) { // the level lives on the other map
-    const q = new URLSearchParams(location.search);
-    location.replace((level.page === 'airport' ? 'airport.html' : './') + '?' + q.toString());
-    return;
-  }
   window.__rollLevel = level ? { ...level, quietFinish: true } : { menu: true };
   const go = (id) => {
     const l = LEVELS.find((x) => x.id === id), q = new URLSearchParams(location.search);
     q.set('mode', 'roll');
     if (id) q.set('level', id); else q.delete('level');
-    location.href = (l?.page === 'airport' ? 'airport.html' : PAGE === 'airport' && id ? './' : location.pathname.split('/').pop() || './') + '?' + q.toString();
+    location.href = (location.pathname.split('/').pop() || './') + '?' + q.toString();
   };
   const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   const store = { get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* private window */ } } };
@@ -53,12 +43,11 @@
     ['Landmarks', [['Brisbane City Hall'], ['The Old Windmill'], ['Parliament House'], ['Treasury Building'], ['Customs House'], ['Brisbane Arcade'],
       ['Cathedral of Saint Stephen'], ['Queensland Museum'], ['Gallery of Modern Art'], ['Queensland Performing Arts Centre'], ['State Library of Queensland'],
       ['Old Museum'], ['Boggo Road Gaol'], ['Sir Thomas Brisbane Planetarium'], ['Brisbane Convention and Exhibition Centre'], ['Riparian Plaza'], ['Brisbane Square'],
-      ['Brisbane Skytower'], ['Brisbane Domestic Terminal'], ['Brisbane International Terminal'], ['Brisbane Airport - Air Traffic Control Tower', 'The control tower'],
-      ['Qantas Hangar 3'], ['The Wheel of Brisbane'], ['The Brisbane sign'], ['Nepalese Peace Pagoda'], ['Shrine of Remembrance'], ['The XXXX sign'],
+      ['Brisbane Skytower'], ['The Wheel of Brisbane'], ['The Brisbane sign'], ['Nepalese Peace Pagoda'], ['Shrine of Remembrance'], ['The XXXX sign'],
       ['Grand Arbour'], ['The Gabba'], ['Suncorp Stadium']].map(([n, label]) => ['landmark:' + n, label || n])],
     ['Animals', [['animal:ibis', 'Ibis'], ['animal:toad', 'Cane toad'], ['animal:magpie', 'Magpie'], ['animal:roo', 'Kangaroo']]],
     ['Getting about', [['person', 'A person'], ['cyclist', 'Cyclist'], ['car', 'Car'], ['bus', 'Bus'], ['metro', 'Brisbane Metro'], ['train', 'Train'],
-      ['ferry', 'CityCat'], ['plane', 'Plane'], ['wanted', 'A wanted bus']]],
+      ['ferry', 'CityCat'], ['wanted', 'A wanted bus']]],
     ['Street furniture', [['bench', 'Bench'], ['waste_basket', 'Bin'], ['picnic_table', 'Picnic table'], ['bbq', 'Barbecue'], ['drinking_water', 'Drinking fountain'],
       ['bicycle_parking', 'Bike rack'], ['post_box', 'Post box'], ['telephone', 'Phone booth'], ['vending_machine', 'Vending machine'], ['street_lamp', 'Street lamp'],
       ['bus_stop', 'Bus stop sign'], ['street_cabinet', 'Street cabinet'], ['recycling', 'Recycling bin'], ['shelter', 'Shelter'], ['fire_hydrant', 'Hydrant marker']]
@@ -149,13 +138,12 @@
       if (endless || finished) return finished ? 'Level done: keep rolling' : null;
       if (g.finish) return 'Roll up the Skytower';
       if (g.size) return `Goal: ${g.size} m across`;
-      if (g.count) return `${g.what}: ${counts[g.count] || 0} of ${g.n}${g.orSize && !planesAround() ? ` (none in: grow to ${g.orSize} m)` : ''}`;
+      if (g.count) return `${g.what}: ${counts[g.count] || 0} of ${g.n}`;
       if (g.reach) { const [x, z] = R.toXZ(...g.reach), [px, , pz] = R.pos, d = Math.hypot(x - px, z - pz); return `Get to ${g.place}: ${d > 1000 ? (d / 1000).toFixed(1) + ' km' : Math.round(d) + ' m'}`; }
       return null;
     },
     clockText: () => (R && level?.limit && !finished && !endless ? `${mmss(Math.max(0, level.limit - (R.clock - startClock)))} left` : null),
   };
-  const planesAround = () => (window.__livePlanes?.drawn || []).some((d) => d.onGround && !window.__livePlanes.gone?.has(d.hex));
 
   function done(ok, why) {
     if (finished) return;
@@ -244,23 +232,13 @@
       const g = level.goal;
       if (g.size && 2 * e.r >= g.size) done(true);
       if (g.count && (counts[g.count] || 0) >= g.n) done(true);
-      if (g.count && g.orSize && !planesAround() && 2 * e.r >= g.orSize) done(true);
       if (g.reach) { const [x, z] = R.toXZ(...g.reach); if (Math.hypot(x - e.x, z - e.z) < g.radius) done(true); }
       if (level.limit && t >= level.limit) done(false, 'Out of time');
     }
     // the reach target's ring on the minimap
     if (level?.goal.reach && !R.markers.length && !finished) { const [x, z] = R.toXZ(...level.goal.reach); R.markers.push({ x, z, colour: '#2f8fe0' }); }
-    // planes on the ground, ringed, at the airport
-    if (level?.goal.count === 'plane' && !finished && Math.floor(t * 2) !== onFrame.tick) {
-      onFrame.tick = Math.floor(t * 2);
-      R.markers.length = 0;
-      const [px, , pz] = R.pos;
-      (window.__livePlanes?.drawn || []).filter((d) => d.onGround && !window.__livePlanes.gone?.has(d.hex))
-        .sort((a, b) => Math.hypot(a.x - px, a.z - pz) - Math.hypot(b.x - px, b.z - pz)).slice(0, 3)
-        .forEach((d) => R.markers.push({ x: d.x, z: d.z, colour: '#f3b61f' }));
-    }
     // the wanted bus: once the ball can take a bus, now and then pick a real one nearby
-    if (!level?.goal.reach && level?.goal.count !== 'plane') {
+    if (!level?.goal.reach) {
       if (wanted) {
         const d = (window.__liveBuses?.drawn || []).find((q) => q.b === wanted.b);
         if (d) { R.markers.length = 0; R.markers.push({ x: d.x, z: d.z, colour: '#f3b61f' }); }
