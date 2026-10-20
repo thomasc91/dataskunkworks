@@ -14,7 +14,8 @@
 (() => {
   const Q = new URLSearchParams(location.search);
   if (Q.get('mode') === 'roll') return;
-  const SPEEDS = [10, 20, 40, 80, 160]; // times real time
+  // replay speed, times real time: a slider from real time to 300 times, spaced evenly in log terms
+  const SPEED_MIN = 1, SPEED_MAX = 300, SPEED_STEPS = [1, 2, 5, 10, 20, 40, 60, 100, 150, 200, 300];
   const ORANGE = '#fc4c02', PALE = '#f6c3a4';
   const fileReady = fetch('ride.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
@@ -86,6 +87,11 @@
       #rideHud button { height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: var(--chip, rgba(0,0,0,.06)); color: var(--ink);
         font: 600 12.5px 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; }
       #rideHud button.on { background: ${ORANGE}; color: #fff; }
+      #rideHud .speedctl { margin-top: 7px; }
+      #rideHud .speedctl label { font: 600 10.5px/1.2 'Hanken Grotesk', system-ui, sans-serif; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; min-width: 48px; }
+      #rideHud .speedctl input { accent-color: var(--ink, #2b2622); }
+      #rideHud .speedctl output { min-width: 44px; text-align: right; font: 700 13px 'JetBrains Mono', monospace; }
+      #rideHud .speedctl button { width: 30px; padding: 0; font-size: 15px; }
       #rideHud .gpx { margin-top: 7px; font: 500 11.5px 'Hanken Grotesk', system-ui, sans-serif; color: var(--muted); }
       #rideHud .gpx a { color: inherit; cursor: pointer; text-decoration: underline; }
       body.riding header, body.riding #hint { display: none !important; }
@@ -107,9 +113,15 @@
       <div class="row">
         <button type="button" data-act="play">Pause</button>
         <input type="range" class="scrub" min="0" max="1000" value="0" aria-label="Where in the ride">
-        <button type="button" data-act="speed" title="Replay speed">40×</button>
         <button type="button" data-act="follow" class="on" title="Keep the rider in view">Follow</button>
         <button type="button" data-act="exit">Done</button>
+      </div>
+      <div class="row speedctl" title="Replay speed, times real time ([ and ] keys)">
+        <label for="rideSpeed">Speed</label>
+        <button type="button" data-act="slower" aria-label="Slower">−</button>
+        <input type="range" id="rideSpeed" class="speedin" min="0" max="1000">
+        <button type="button" data-act="faster" aria-label="Faster">+</button>
+        <output class="speedout" for="rideSpeed">40×</output>
       </div>
       <div class="gpx">Replay another ride: <a data-act="gpx">open a GPX file</a></div>`;
     document.body.append(hud);
@@ -263,7 +275,22 @@
     }
     btn.addEventListener('click', () => { if (active) close(); else if (ride) open(); else picker.click(); });
     $('[data-act=play]').onclick = () => { if (t >= ride.elapsed) t = 0; setPlaying(!playing); };
-    $('[data-act=speed]').onclick = (e) => { speed = SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]; e.target.textContent = `${speed}×`; };
+    // the speed slider runs on a log scale; − and + (and the keys) step through round speeds
+    const toSlider = (v) => Math.round((1000 * Math.log(v / SPEED_MIN)) / Math.log(SPEED_MAX / SPEED_MIN));
+    const fromSlider = (u) => { const v = SPEED_MIN * (SPEED_MAX / SPEED_MIN) ** (u / 1000); return v < 10 ? Math.round(v * 2) / 2 : Math.round(v); };
+    function setSpeed(v, fromInput = false) {
+      speed = Math.max(SPEED_MIN, Math.min(SPEED_MAX, v));
+      if (!fromInput) $('.speedin').value = String(toSlider(speed));
+      $('.speedout').textContent = `${speed}×`;
+      try { localStorage.setItem('ride-speed', String(speed)); } catch { /* private window */ }
+    }
+    const step = (dir) => setSpeed(dir > 0 ? SPEED_STEPS.find((x) => x > speed + 1e-9) ?? SPEED_MAX : [...SPEED_STEPS].reverse().find((x) => x < speed - 1e-9) ?? SPEED_MIN);
+    $('.speedin').addEventListener('input', (e) => setSpeed(fromSlider(+e.target.value), true));
+    $('[data-act=slower]').onclick = () => step(-1);
+    $('[data-act=faster]').onclick = () => step(1);
+    let saved = NaN;
+    try { saved = +localStorage.getItem('ride-speed'); } catch { /* private window */ }
+    setSpeed(saved >= SPEED_MIN && saved <= SPEED_MAX ? saved : 40);
     $('[data-act=follow]').onclick = (e) => { follow = !follow; e.target.classList.toggle('on', follow); };
     $('[data-act=exit]').onclick = close;
     $('[data-act=gpx]').onclick = () => picker.click();
@@ -272,6 +299,8 @@
       if (!active || e.target.closest?.('input:not([type=range])')) return;
       if (e.code === 'Space') { e.preventDefault(); $('[data-act=play]').click(); }
       if (e.key === 'Escape') close();
+      if (e.key === '[') step(-1); // (- and + zoom the map)
+      if (e.key === ']') step(1);
     });
     picker.addEventListener('change', async () => {
       const f = picker.files?.[0];

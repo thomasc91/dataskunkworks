@@ -51,7 +51,7 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 
 ## Ride replay
 
-The Ride button replays a bike ride on the map from a GPX file (Strava exports one from a ride's menu): the route drawn as it's ridden, the rider, the camera following, and the speed, height, heart rate and time of day. The file is read in your browser and isn't uploaded anywhere.
+The Ride button replays a bike ride on the map from a GPX file (Strava exports one from a ride's menu): the route drawn as it's ridden, the rider, the camera following, and the speed, height, heart rate and time of day. A speed slider runs it from real time to 300 times faster. The file is read in your browser and isn't uploaded anywhere.
 
 ## Towers
 

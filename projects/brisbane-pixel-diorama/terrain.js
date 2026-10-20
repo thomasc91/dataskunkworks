@@ -25,7 +25,7 @@
     const [meta, buf, bridges] = await files;
     if (!meta || !buf) return null;
     const t0 = performance.now();
-    if (bridges) window.__bridgeModels?.adjust?.(data); // fixes to the data's hand-built bridges (bridges.js)
+    if (bridges) window.__bridgeModels?.adjust?.(data, bridges); // fixes to the data's hand-built bridges (bridges.js)
     const api = build(data, K, meta, buf, bridges);
     // Roads draped on the ground take the ground's smooth normals: city.js asks three.js to compute flat ones for
     // them, which showed every fold of the 10 m ground mesh as a facet on the road.

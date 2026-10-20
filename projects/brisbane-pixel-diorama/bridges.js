@@ -914,9 +914,22 @@
   // to the cliff (82.1 m; the data stopped it at 45 m), and its top chord drops straight from each tower to the
   // cantilever tips 93.9 m out (about deck + 12 m), with a separate camelback suspended span rising to about
   // deck + 16 m in the middle, rather than one smooth sag.
-  window.__bridgeModels.adjust = (data) => {
+  //
+  // OpenStreetMap maps the shade roofs along the Goodwill Bridge's deck as buildings. The map drew them as solid 4 m
+  // blocks, which with the terrain stood on the riverbed under the bridge; the bridge models stand for whatever is on
+  // their decks, so a building inside a modelled bridge's outline is left out (fixed 20 Oct 2026). It's flattened in
+  // place rather than removed, so city.js's seeded facade draws for every later building stay the same.
+  window.__bridgeModels.adjust = (data, list) => {
     const s = data.story?.s;
     if (s && s[3] < 960) s[3] = 974;
+    const inPoly = (a, x, z) => { let c = false; for (let i = 0, j = a.length - 2; i < a.length; j = i, i += 2) if ((a[i + 1] > z) !== (a[j + 1] > z) && x < ((a[j] - a[i]) * (z - a[i + 1])) / (a[j + 1] - a[i + 1]) + a[i]) c = !c; return c; };
+    const outlines = (list?.bridges || []).map((b) => b.outline).filter((o) => o?.length >= 6);
+    for (const b of data.buildings || []) {
+      const r = b[1], n = r.length / 2;
+      let x = 0, z = 0;
+      for (let i = 0; i < r.length; i += 2) { x += r[i] / n; z += r[i + 1] / n; }
+      if (outlines.some((o) => inPoly(o, x, z))) { b[0] = 0; b[1] = [x, z, x, z, x, z]; b[4] = 0; b.length = Math.min(b.length, 6); }
+    }
   };
   window.__bridgeModels.storyChord = (k, T, C, M, v, N, D) => {
     const tip = 93.9;
