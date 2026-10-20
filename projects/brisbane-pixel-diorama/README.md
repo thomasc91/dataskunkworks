@@ -15,6 +15,7 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferrie
 | `bridges.js`, `bridges.json` | Hand-built models of 14 river bridges, and which of the map's bridges each one replaces |
 | `ferry-terminals.js`, `terminals.json` | The 17 ferry terminals on their real outlines, and the hover cards |
 | `landmarks.js`, `landmarks.json` | Hand-built landmarks, and where each one goes |
+| `ride.js` | The ride replay, from a GPX file |
 | `towers.js` | Brisbane's 21 tallest towers reshaped from photos, and the new ones the map lacked |
 | `live-config.js`, `live-ferries.js`, `live-trains.js`, `live-planes.js` | The live ferries, trains and planes, and which relay they read |
 | `rail.json` | The railway: 115 km of track and the station platforms, and TransLink's stop ids for naming each train's next stop |
@@ -46,6 +47,10 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 - **Traffic levels:** the cars are simulated, but how many are on the roads near each signal follows Brisbane City Council's live traffic signal data, read straight from its open data portal every five minutes. At 9:25pm on a Monday about 1,600 of the 7,000 cars are out.
 - **Cyclists:** riders on 190 km of bikeways, as many as the council's 12 bike counters in the map count on that day of the week (October and November 2025, the latest published), spread over the day with commuting peaks, at about 20 km/h. About 350 ride at 7:30am on a weekday. Half stay home in the rain.
 - **The sun and weather:** the Now button keeps the slider at the time in Brisbane, with the sun where it really is today. The weather is Open-Meteo's for Brisbane now: cloud dims the light, rain falls, and the toolbar shows the temperature and sky. After dark the map shows the afternoon.
+
+## Ride replay
+
+The Ride button replays a bike ride on the map from a GPX file (Strava exports one from a ride's menu): the route drawn as it's ridden, the rider, the camera following, and the speed, height, heart rate and time of day. The file is read in your browser and isn't uploaded anywhere.
 
 ## Towers
 
