@@ -15,7 +15,12 @@
   const inPoly = (a, x, z) => { let c = false; for (let i = 0, j = a.length - 2; i < a.length; j = i, i += 2) if ((a[i + 1] > z) !== (a[j + 1] > z) && x < ((a[j] - a[i]) * (z - a[i + 1])) / (a[j + 1] - a[i + 1]) + a[i]) c = !c; return c; };
   // a rectangle round (x, z), u along (ux, uz) and v to its left, as a [x, z, ...] ring
   const rect = (x, z, ux, uz, u0, u1, v0, v1) => [[u0, v0], [u1, v0], [u1, v1], [u0, v1]].flatMap(([u, v]) => [x + u * ux - v * uz, z + u * uz + v * ux]);
-  const circle = (x, z, r, n = 24) => Array.from({ length: n }, (_, i) => [x + r * Math.cos((2 * Math.PI * i) / n), z + r * Math.sin((2 * Math.PI * i) / n)]).flat();
+  // A building entry shrunk to nothing at its centre. It keeps its type, so the facade draws stay in step, and its id.
+  const flatten = (b) => {
+    const r = b[1], x = mean(r, 0), z = mean(r, 1);
+    b[0] = 0; b[1] = [x, z, x, z, x, z]; b[4] = 0; b.length = Math.min(b.length, 6);
+  };
+  const circle = (x, z, r, n = 24) =>Array.from({ length: n }, (_, i) => [x + r * Math.cos((2 * Math.PI * i) / n), z + r * Math.sin((2 * Math.PI * i) / n)]).flat();
 
   // Footprints the models stand on, where the model's own trees are taken out.
   function clearings(L) {
@@ -37,8 +42,10 @@
     T0.load = async (data, K) => {
       const L = await file;
       if (L) {
+        // Flattened in place rather than taken out: city.js picks each building's facade with a seeded random draw,
+        // in order, so removing entries would give every later building a different facade.
         const drop = new Set(L.replaces || []);
-        data.buildings = data.buildings.filter((b) => !drop.has(b[5]));
+        for (const b of data.buildings) if (drop.has(b[5])) flatten(b);
         const clear = clearings(L).map((a) => {
           let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
           for (let i = 0; i < a.length; i += 2) { x0 = Math.min(x0, a[i]); x1 = Math.max(x1, a[i]); z0 = Math.min(z0, a[i + 1]); z1 = Math.max(z1, a[i + 1]); }
@@ -141,6 +148,8 @@
       }
     }
   }
+
+  window.__landmarkGeo = Geo; // towers.js builds its tower tops with it
 
   // 5 by 7 pixel letters, top row first
   const GLYPH = {

@@ -169,11 +169,15 @@
     const add = (grid, x, z, v) => { const k = key(Math.floor(x / CELL), Math.floor(z / CELL)); let a = grid.get(k); if (!a) grid.set(k, (a = [])); a.push(v); };
     function near(grid, x, z, reach, fn) {
       const r = Math.ceil(reach / CELL), gi = Math.floor(x / CELL), gj = Math.floor(z / CELL);
-      for (let i = gi - r; i <= gi + r; i++) for (let j = gj - r; j <= gj + r; j++) { const a = grid.get(key(i, j)); if (a) for (const v of a) fn(v); }
+      // only the cells over the map: a huge reach would otherwise loop over millions of empty ones
+      const i0 = Math.max(gi - r, Math.floor((ccx - cr) / CELL)), i1 = Math.min(gi + r, Math.floor((ccx + cr) / CELL));
+      const j0 = Math.max(gj - r, Math.floor((ccz - cr) / CELL)), j1 = Math.min(gj + r, Math.floor((ccz + cr) / CELL));
+      for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) { const a = grid.get(key(i, j)); if (a) for (const v of a) fn(v); }
     }
     // buildings: each part's outline, drawn height and size, by building id
     const parts = [], byBid = new Map(), bgrid = new Map();
-    for (const [h, pts, , , , bid] of data.buildings) {
+    for (const [h, pts, , , minH = 0, bid] of data.buildings) {
+      if (!(h > 0)) continue; // flattened by landmarks.js or towers.js, which draw it another way
       let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, area = 0, cx = 0, cz = 0;
       const n = pts.length / 2;
       for (let i = 0; i < n; i++) {
@@ -183,23 +187,23 @@
       }
       const H = h * 1.6, long = Math.max(x1 - x0, z1 - z0);
       const p = { bid, pts, x0, x1, z0, z1, cx: cx / n, cz: cz / n, H, w: x1 - x0, d: z1 - z0,
-        size: Math.max(H, 0.55 * long), vol: (Math.abs(area) / 2) * H * 0.7, gone: false };
+        size: Math.max(H, 0.55 * long), vol: (Math.abs(area) / 2) * (h - minH) * 1.6 * 0.7, gone: false }; // a tier stacked on another counts its own height
       parts.push(p);
       if (!byBid.has(bid)) byBid.set(bid, []);
       byBid.get(bid).push(p);
       for (let i = Math.floor(x0 / CELL); i <= Math.floor(x1 / CELL); i++)
         for (let j = Math.floor(z0 / CELL); j <= Math.floor(z1 / CELL); j++) { const k = key(i, j); let a = bgrid.get(k); if (!a) bgrid.set(k, (a = [])); a.push(p); }
     }
-    // trees: straight from the renderer's instanced trees
-    // hand-built landmarks (landmarks.js): rolled up like buildings once they're built, from their footprints; one
-    // that stands on a building's roof (the XXXX sign) goes with that building
-    const lmByBid = new Map();
-    let lmAdded = false;
+    // hand-built landmarks (landmarks.js) and tower tops (towers.js): rolled up like buildings once they're built, from
+    // their footprints; one that stands on a building (the XXXX sign, a tower's crown) goes with that building
+    const lmByBid = new Map(), lmSeen = new Set();
+    let lmNext = 0;
     function addLandmarks() {
-      const items = window.__landmarks?.items;
-      if (lmAdded || !items) return;
-      lmAdded = true;
-      items.forEach((it, i) => {
+      const items = [...(window.__landmarks?.items || []), ...(window.__towers?.items || [])];
+      if (items.length === lmSeen.size) return;
+      items.forEach((it) => {
+        if (lmSeen.has(it)) return;
+        lmSeen.add(it);
         if (it.bid != null) { if (!lmByBid.has(it.bid)) lmByBid.set(it.bid, []); lmByBid.get(it.bid).push(it); return; }
         const pts = it.pts, n = pts.length / 2;
         let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity, cx = 0, cz = 0;
@@ -207,13 +211,14 @@
           const x = pts[2 * q], z = pts[2 * q + 1];
           x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); cx += x; cz += z;
         }
-        const p = { bid: -1 - i, extra: it, pts, x0, x1, z0, z1, cx: cx / n, cz: cz / n, H: it.H, w: x1 - x0, d: z1 - z0,
+        const p = { bid: -1 - lmNext++, extra: it, pts, x0, x1, z0, z1, cx: cx / n, cz: cz / n, H: it.H, w: x1 - x0, d: z1 - z0,
           size: Math.max(it.H, 0.55 * Math.max(x1 - x0, z1 - z0)), vol: it.vol, gone: false };
         parts.push(p);
         for (let a = Math.floor(x0 / CELL); a <= Math.floor(x1 / CELL); a++)
           for (let b = Math.floor(z0 / CELL); b <= Math.floor(z1 / CELL); b++) { const k = key(a, b); let l = bgrid.get(k); if (!l) bgrid.set(k, (l = [])); l.push(p); }
       });
     }
+    // trees: straight from the renderer's instanced trees
     const tgrid = new Map(), trees = [];
     (city.treeMeshes || []).forEach((m, mi) => {
       const a = m.instanceMatrix.array;
@@ -568,7 +573,8 @@
       toast.textContent = text; toast.classList.add('on'); toastAt = clock;
       if (big) { banner.innerHTML = big; banner.classList.add('on'); bannerAt = clock; }
     }
-    function grow(vol) { r = Math.cbrt(r ** 3 + vol * GROW * 0.239); }
+    // never past a quarter of the map's radius (1.25 km here): by then there's nothing left it can't take
+    function grow(vol) { r = Math.min(cr * 0.25, Math.cbrt(r ** 3 + vol * GROW * 0.239)); }
     const fmt = (m) => (m >= 100 ? `${Math.round(m)} m` : m >= 10 ? `${m.toFixed(1)} m` : `${m.toFixed(2)} m`);
     const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -579,6 +585,7 @@
     function pickAll() {
       const cap = PICK * r, reach = r * 1.05;
       picksThisFrame = 0;
+      let buildingPicks = 0;
       let best = null;
       const note = (name, size, key = '', extra = {}) => {
         things++;
@@ -748,6 +755,8 @@
         const [qx, qz, inside] = closest(p, px, pz), d = Math.hypot(px - qx, pz - qz);
         if (!inside && d > r * 0.92) return;
         if (p.size <= cap) {
+          // at most 30 buildings a frame, so a big ball in the CBD grows smoothly rather than all at once
+          if (++buildingPicks > 30) return;
           if (p.extra) { p.gone = true; takeLandmark(p.extra, p); return; }
           const all = byBid.get(p.bid);
           let vol = 0, H = 0;
@@ -761,7 +770,7 @@
           const name = named ? (tall > 40 ? `${named} (${Math.round(tall)} m)` : named) : TYPES[info[1]] || 'a building';
           note(name, p.size + (named ? 30 : 0), named ? 'landmark:' + named : 'building', { landmark: named || null });
           if (named) stats.names.push(named);
-          for (const it of lmByBid.get(p.bid) || []) takeLandmark(it, p);
+          for (const it of lmByBid.get(p.bid) || []) it.quiet ? it.hide() : takeLandmark(it, p); // a tower's top goes with it
           if (named === (LEVEL.finishOn ?? 'Brisbane Skytower') && !finished) finish();
         } else {
           // too big: push the ball out and bounce it back
