@@ -27,6 +27,14 @@
     const t0 = performance.now();
     if (bridges) window.__bridgeModels?.adjust?.(data); // fixes to the data's hand-built bridges (bridges.js)
     const api = build(data, K, meta, buf, bridges);
+    // Roads draped on the ground take the ground's smooth normals: city.js asks three.js to compute flat ones for
+    // them, which showed every fold of the 10 m ground mesh as a facet on the road.
+    const proto = K.BufferGeometry.prototype, flatNormals = proto.computeVertexNormals;
+    proto.computeVertexNormals = function () {
+      const n = api.roadNormals.find(this.attributes.position?.array);
+      if (n) return this.setAttribute('normal', new K.BufferAttribute(n, 3));
+      return flatNormals.call(this);
+    };
     // The elevation data's licence (CC BY-SA) asks for its credit wherever it's shown.
     const foot = document.querySelector('footer');
     if (foot && meta.source?.credit) {
@@ -49,6 +57,8 @@
   const WATER_Y = 0.6; // the renderer draws water this far above its level (and the ferries sit on it)
   const BASE_Y = -60; // bottom of the model's sides, as the flat disc had
   const ROAD_DEV = 0.1; // drawn metres a road may stray from the ground before it is split
+  const ROAD_FOLD = 0.3; // drawn metres the ground may rise or sink inside a road piece before the piece is cut to fit it (roads float 0.45 m up)
+  const LAND_GRADE = 0.05; // an overpass's hump: at most this fraction of its length, drawn
   const MASK = 4096; // texels across the park mask
   const ROCK = '#b88c6c'; // bare cliff faces: Brisbane tuff, the Kangaroo Point cliffs' stone
 
@@ -81,6 +91,24 @@
     }
     const h = (x, z) => sample(Y, x, z);
     const hs = (x, z) => sample(SURF, x, z);
+    // The ground's smooth normal at any point: each node's normal (from its neighbours, as the ground mesh shades
+    // it) blended on the same triangles.
+    function nodeN(i, j) {
+      const k = j * nx + i;
+      const l = Y[i > 0 ? k - 1 : k], r = Y[i < nx - 1 ? k + 1 : k], u = Y[j > 0 ? k - nx : k], w = Y[j < nz - 1 ? k + nx : k];
+      return [-(r - l) / ((i > 0 && i < nx - 1 ? 2 : 1) * d), 1, -(w - u) / ((j > 0 && j < nz - 1 ? 2 : 1) * d)];
+    }
+    function nrm(x, z) {
+      let fx = (x - x0) / d, fz = (z - z0) / d;
+      fx = fx < 0 ? 0 : fx > nx - 1.0001 ? nx - 1.0001 : fx;
+      fz = fz < 0 ? 0 : fz > nz - 1.0001 ? nz - 1.0001 : fz;
+      const i = fx | 0, j = fz | 0, u = fx - i, v = fz - j;
+      let n;
+      if (u + v <= 1) { const a = nodeN(i, j), b = nodeN(i + 1, j), c = nodeN(i, j + 1); n = [0, 1, 2].map((q) => a[q] + (b[q] - a[q]) * u + (c[q] - a[q]) * v); }
+      else { const e = nodeN(i + 1, j + 1), b = nodeN(i + 1, j), c = nodeN(i, j + 1); n = [0, 1, 2].map((q) => e[q] + (c[q] - e[q]) * (1 - u) + (b[q] - e[q]) * (1 - v)); }
+      const l = Math.hypot(n[0], n[1], n[2]);
+      return [n[0] / l, n[1] / l, n[2] / l];
+    }
     function water(x, z) {
       const i = Math.round((x - x0) / d), j = Math.round((z - z0) / d);
       return i >= 0 && j >= 0 && i < nx && j < nz && widx[j * nx + i] > 0;
@@ -326,8 +354,46 @@
       })(0, at(0), 1, at(1), 0);
       return ts;
     }
+    // Cut a convex polygon of [x, z] points along the ground mesh's own edges (the grid lines both ways and each
+    // cell's diagonal), so every piece lies inside one ground triangle.
+    function onGround(poly) {
+      let pieces = [poly.map(([x, z]) => [(x - x0) / d, (z - z0) / d])];
+      const lines = [];
+      let f0 = Infinity, f1 = -Infinity, g0 = Infinity, g1 = -Infinity, s0 = Infinity, s1 = -Infinity;
+      for (const [u, v] of pieces[0]) { f0 = Math.min(f0, u); f1 = Math.max(f1, u); g0 = Math.min(g0, v); g1 = Math.max(g1, v); s0 = Math.min(s0, u + v); s1 = Math.max(s1, u + v); }
+      for (let k = Math.floor(f0) + 1; k < f1; k++) lines.push([1, 0, k]);
+      for (let k = Math.floor(g0) + 1; k < g1; k++) lines.push([0, 1, k]);
+      for (let k = Math.floor(s0) + 1; k < s1; k++) lines.push([1, 1, k]);
+      for (const [a, b, c] of lines) {
+        const next = [];
+        for (const pc of pieces) {
+          const side = pc.map(([u, v]) => a * u + b * v - c);
+          if (side.every((q) => q <= 1e-9) || side.every((q) => q >= -1e-9)) { next.push(pc); continue; }
+          const lo = [], hi = [];
+          for (let i = 0; i < pc.length; i++) {
+            const j = (i + 1) % pc.length, p = pc[i], q = pc[j], sp = side[i], sq = side[j];
+            if (sp <= 0) lo.push(p);
+            if (sp >= 0) hi.push(p);
+            if ((sp < 0 && sq > 0) || (sp > 0 && sq < 0)) {
+              const t = sp / (sp - sq), m = [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+              lo.push(m); hi.push(m);
+            }
+          }
+          if (lo.length >= 3) next.push(lo);
+          if (hi.length >= 3) next.push(hi);
+        }
+        pieces = next;
+      }
+      return pieces.map((pc) => pc.map(([u, v]) => [x0 + u * d, z0 + v * d]));
+    }
+    // Roads lie on the ground. A piece whose ground isn't flat (a fold of the ground mesh inside it rises or sinks
+    // more than ROAD_FOLD from the piece's own surface) is cut along the mesh's edges, so the road follows every fold
+    // rather than letting the ground show through it, as it did in cuttings like the Pacific Motorway's at
+    // Woolloongabba (fixed 20 Oct 2026).
     function roads(list) {
       const out = [];
+      let draped = 0;
+      const put = (x, z) => out.push(x, h(x, z), z);
       for (const [w, p] of list) {
         for (let e = 0; e + 3 < p.length; e += 2) {
           const ax = p[e], az = p[e + 1], bx = p[e + 2], bz = p[e + 3];
@@ -336,14 +402,41 @@
           const ts = splits(ax, az, bx, bz, L);
           for (let q = 0; q + 1 < ts.length; q++) {
             const sx = ax + vx * ts[q], sz = az + vz * ts[q], ex = ax + vx * ts[q + 1], ez = az + vz * ts[q + 1];
-            const c = [[sx + ox, sz + oz], [ex + ox, ez + oz], [ex - ox, ez - oz], [sx - ox, sz - oz]].map(([x, z]) => [x, h(x, z), z]);
-            for (const k of [0, 1, 2, 0, 2, 3]) out.push(c[k][0], c[k][1], c[k][2]);
+            const c = [[sx + ox, sz + oz], [ex + ox, ez + oz], [ex - ox, ez - oz], [sx - ox, sz - oz]];
+            const y = c.map(([x, z]) => h(x, z));
+            // the ground against the piece's own (bilinear) surface, at points across and along it
+            let flat = true;
+            for (const [a, b] of [[0.5, 0.5], [0.5, 0.15], [0.5, 0.85], [0.15, 0.5], [0.85, 0.5], [0.2, 0.2], [0.8, 0.8], [0.2, 0.8], [0.8, 0.2]]) {
+              const x = c[0][0] * (1 - a) * (1 - b) + c[1][0] * a * (1 - b) + c[2][0] * a * b + c[3][0] * (1 - a) * b;
+              const z = c[0][1] * (1 - a) * (1 - b) + c[1][1] * a * (1 - b) + c[2][1] * a * b + c[3][1] * (1 - a) * b;
+              const yq = y[0] * (1 - a) * (1 - b) + y[1] * a * (1 - b) + y[2] * a * b + y[3] * (1 - a) * b;
+              if (Math.abs(h(x, z) - yq) > ROAD_FOLD) { flat = false; break; }
+            }
+            if (flat) {
+              for (const k of [0, 1, 2, 0, 2, 3]) out.push(c[k][0], y[k], c[k][1]);
+              continue;
+            }
+            draped++;
+            for (const pc of onGround(c)) for (let i = 1; i + 1 < pc.length; i++) { put(...pc[0]); put(...pc[i]); put(...pc[i + 1]); }
           }
         }
       }
       api.stats.roadQuads = out.length / 18;
-      return new Float32Array(out);
+      api.stats.roadsDraped = draped;
+      // the ground's smooth normals, used in place of each triangle's own when city.js computes them (see load())
+      const pos = new Float32Array(out), nor = new Float32Array(pos.length);
+      for (let i = 0; i < pos.length; i += 3) nor.set(nrm(pos[i], pos[i + 2]), i);
+      roadNormals.push([pos, nor]);
+      return pos;
     }
+    // [positions, normals] for each road mesh made here. city.js copies the positions into its own attribute, so
+    // they're matched by content.
+    const roadNormals = [];
+    roadNormals.find = (a) => {
+      if (!a) return null;
+      const hit = roadNormals.filter(([p]) => p.length === a.length && p[0] === a[0] && p[p.length >> 1] === a[a.length >> 1] && p[p.length - 1] === a[a.length - 1])[0];
+      return hit ? hit[1] : null;
+    };
 
     // --- Buildings: each one stands on the ground at its footprint's mean height; its walls run down to the
     // lowest ground under it, so a house on a slope gets a taller downhill side, like a Queenslander on stumps.
@@ -371,8 +464,12 @@
     }
 
     // --- Bridges: a deck runs from the ground at one end to the ground at the other. Over the river its
-    // height is the model's own (metres above the water, as in the flat map); over land it rises that much
-    // above the line between its ends.
+    // height is the model's own (metres above the water, as in the flat map). Over land it runs straight
+    // between its ends and humps only as much as it needs to stand the model's height above the lowest ground
+    // under it: the ground model already has the cutting, creek or road an overpass crosses, so the flat map's
+    // full hump stood short spans up like boxes, as at the Pacific Motorway at Woolloongabba (fixed 20 Oct 2026).
+    // A road bridge's hump is also kept to LAND_GRADE of its length; a footbridge (4 m wide or less) keeps the
+    // hump it needs, since its stairs and ramps aren't in the ground model.
     const SX = [], SZ = [], SF = [], SN = [], cells = new Map();
     const cellKey = (x, z) => Math.floor(x / 16) * 100000 + Math.floor(z / 16);
     // The hand-built river bridges (bridges.js, from bridges.json) claim their ways, known by their end points:
@@ -380,6 +477,7 @@
     const MODELS = window.__bridgeModels;
     const claimed = new Map(), modelled = MODELS ? bridgeList?.bridges || [] : [];
     const wayKey = (x0, z0, x1, z1) => `${x0},${z0},${x1},${z1}`;
+    const widthOf = new Map((data.bridges || []).map((b) => { const p = b[3]; return [wayKey(p[0], p[1], p[p.length - 2], p[p.length - 1]), b[0]]; }));
     for (const b of modelled) {
       b.parts = [];
       for (const i of b.ids) {
@@ -395,10 +493,17 @@
       const Ha = hs(P[0][0], P[0][1]), Hb = hs(P[n - 1][0], P[n - 1][1]);
       let river = false;
       for (let i = 0; i < n && Tp > 0 && !river; i++) river = flat(Sc[i]) >= 0.3 * Tp && water(P[i][0], P[i][1]);
+      let lift = Tm;
+      if (!river && !cl && Tp > 0) {
+        let dip = 0;
+        for (let i = 1; i < n - 1; i++) dip = Math.max(dip, Ha + ((Hb - Ha) * Sc[i]) / F - hs(P[i][0], P[i][1]));
+        const w = widthOf.get(wayKey(P[0][0], P[0][1], P[n - 1][0], P[n - 1][1])) ?? 10;
+        lift = Math.max(0, Math.min(Tm, Tm - dip, w > 4 ? LAND_GRADE * F : Infinity));
+      }
       const out = new Float32Array(n);
       for (let i = 0; i < n; i++) {
         const c = Ha + ((Hb - Ha) * Sc[i]) / F, f = flat(Sc[i]), r = Tp > 0 ? f / Tp : 0;
-        out[i] = river ? c + Math.max(Tm - c, 0) * r : c + Tm * r;
+        out[i] = river ? c + Math.max(Tm - c, 0) * r : c + lift * r;
         const key = cellKey(P[i][0], P[i][1]);
         let list = cells.get(key);
         if (!list) cells.set(key, (list = []));
@@ -554,7 +659,7 @@
 
     const api = {
       scale: S, h, hs, isWater: water, inWater, treeY, hc, ray, shadow, ground, water: waterMesh, roads, bref, bmin,
-      deck, deckAt, densify, carY, models, ownsKpb: !!(kpbModel && data.kpb), storyChord: MODELS && bridgeList ? MODELS.storyChord : null,
+      deck, deckAt, densify, carY, models, roadNormals, ownsKpb: !!(kpbModel && data.kpb), storyChord: MODELS && bridgeList ? MODELS.storyChord : null,
       mesh: null, lo, hi, meta,
       stats: { bridges: 0, riverBridges: 0 },
     };

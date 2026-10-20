@@ -73,6 +73,8 @@ Then open http://localhost:8000/. The fonts come from Google Fonts; offline, it 
 
 ## Data
 
+On the map these credits sit behind the Data sources button in the title card, and the Data button in roll mode.
+
 - Buildings, streets, parks, the railway, bus routes, bikeways, bridge outlines, ferry terminals and the landmarks' places © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.
 - Elevation: Queensland DEM (QldDem), CC BY-SA. Includes material © State of Queensland (Department of Natural Resources and Mines, Manufacturing, and Regional and Rural Development); © Commonwealth of Australia (Geoscience Australia, The Australian Hydrographic Office); © www.deepreef.org 2025. The height grid in `terrain.bin` is shared under the same licence.
 - Ferry, train and bus positions: TransLink SEQ GTFS-RT, CC BY 4.0.

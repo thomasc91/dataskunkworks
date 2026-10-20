@@ -73,7 +73,7 @@
   #card.pinned #cardClose { display: block; }
   #cardClose:hover { background: var(--line); color: var(--ink); }
 
-  .toolbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: max(34px, calc(env(safe-area-inset-bottom) + 30px));
+  .toolbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: max(16px, calc(env(safe-area-inset-bottom) + 12px));
              display: flex; align-items: center; gap: 4px; padding: 6px; max-width: calc(100% - 32px); box-sizing: border-box; }
   .group { display: flex; align-items: center; gap: 4px; }
   .sep { width: 1px; align-self: stretch; margin: 6px 4px; background: var(--line); }
@@ -96,9 +96,15 @@
           transition: opacity .6s; }
   #hint.gone { opacity: 0; }
 
-  footer { position: absolute; right: max(12px, env(safe-area-inset-right)); bottom: max(8px, env(safe-area-inset-bottom));
-           max-width: calc(100% - 24px); box-sizing: border-box; padding: 3px 9px; border-radius: 8px; font-size: 11px; line-height: 1.35;
-           color: var(--muted); background: color-mix(in srgb, var(--panel) 86%, transparent); pointer-events: none; }
+  /* The data credits: folded into the header card behind a "Data sources" button (20 Oct 2026; they used to run
+     along the bottom of the map). The live layers add their own credits to the footer as they start. */
+  .credits-btn { pointer-events: auto; margin: 8px 0 0; padding: 0; border: 0; background: none; cursor: pointer;
+                 font: 600 12px/1.3 'Hanken Grotesk', system-ui, sans-serif; color: var(--muted); text-decoration: underline;
+                 text-underline-offset: 2px; }
+  .credits-btn:hover { color: var(--ink); }
+  header footer { display: none; margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--line); max-height: 38vh; overflow: auto;
+                  font-size: 11px; line-height: 1.4; color: var(--muted); pointer-events: auto; }
+  header.credits-open footer { display: block; }
 
   #status { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center;
             font: 700 13px 'JetBrains Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
@@ -115,14 +121,13 @@
     .sub { display: none; }
     header { max-width: calc(100% - 32px); padding: 9px 13px 11px; }
     .toolbar { left: 12px; right: 12px; transform: none; max-width: none; flex-wrap: wrap; justify-content: center;
-               bottom: max(30px, calc(env(safe-area-inset-bottom) + 26px)); }
+               bottom: max(12px, calc(env(safe-area-inset-bottom) + 8px)); }
     .toolbar .sep { display: none; }
     .sun { flex-basis: 100%; justify-content: center; padding: 2px 0 2px; }
     .sun input { flex: 1; max-width: 220px; }
     #card { left: 12px; right: 12px; width: auto; top: auto; bottom: max(150px, calc(env(safe-area-inset-bottom) + 146px)); }
     #hint { bottom: max(146px, calc(env(safe-area-inset-bottom) + 142px)); white-space: normal; width: max-content;
             max-width: calc(100% - 48px); text-align: center; }
-    footer { right: 12px; left: 12px; text-align: center; font-size: 10px; }
     footer .long { display: none; }
     .label.suburb { font-size: 10px; letter-spacing: .12em; padding: 2px 5px; }
   }
@@ -140,6 +145,8 @@
     <div class="kicker">Brisbane · pixel diorama</div>
     <h1>5 km around West End</h1>
     <p class="sub">Everything within 5 km of West End, the CBD and Eagle Street included, built from open map data. Heights and hills are drawn 1.6× taller; the traffic, CityCats and planes are simulated.</p>
+    <button id="creditsBtn" class="credits-btn" type="button" aria-expanded="false" aria-controls="credits">Data sources</button>
+    <footer id="credits"><span class="long">Buildings, streets and parks: </span>© OpenStreetMap contributors, Overture Maps Foundation</footer>
   </header>
 
   <section id="card" class="panel" hidden aria-live="polite">
@@ -204,9 +211,26 @@
     </label>
   </nav>
 
-  <footer><span class="long">Buildings, streets and parks: </span>© OpenStreetMap contributors, Overture Maps Foundation</footer>
   <div id="status" role="status">Building Brisbane…</div>
 </div>
+<script>
+  // "Data sources" opens the credits in the header card; Esc or a click on the map closes them.
+  (() => {
+    const head = document.querySelector('header'), btn = document.getElementById('creditsBtn');
+    const set = (open) => { head.classList.toggle('credits-open', open); btn.setAttribute('aria-expanded', String(open)); btn.textContent = open ? 'Hide data sources' : 'Data sources'; };
+    btn.addEventListener('click', () => set(!head.classList.contains('credits-open')));
+    addEventListener('keydown', (e) => { if (e.key === 'Escape') set(false); });
+    document.getElementById('c').addEventListener('pointerdown', () => set(false));
+    // On a phone the toolbar wraps onto several rows, so the hint and the building card sit just above it.
+    const bar = document.querySelector('.toolbar'), lift = ['hint', 'card'].map((id) => document.getElementById(id)).filter(Boolean);
+    const place = () => {
+      const narrow = innerWidth <= 640, b = narrow ? `${Math.round(innerHeight - bar.getBoundingClientRect().top + 10)}px` : '';
+      for (const el of lift) el.style.bottom = b;
+    };
+    addEventListener('resize', place);
+    new ResizeObserver(place).observe(bar);
+  })();
+</script>
 <script src="bridges.js"></script>
 <script src="terrain.js"></script>
 <script src="landmarks.js"></script>

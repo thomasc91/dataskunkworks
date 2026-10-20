@@ -93,7 +93,7 @@
   `;
   document.head.append(css);
   const panel = (id) => { const e = document.createElement('div'); e.className = 'rollPanel'; e.id = id; e.hidden = true; e.innerHTML = '<div class="sheet"></div>'; document.body.append(e); return e; };
-  const menu = panel('rollMenu'), result = panel('rollResult'), bookPanel = panel('rollBookPanel');
+  const menu = panel('rollMenu'), result = panel('rollResult'), bookPanel = panel('rollBookPanel'), creditsPanel = panel('rollCredits');
   const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
   const best = store.get('roll-best', {});
 
@@ -260,8 +260,18 @@
   // --- Buttons in the game -----------------------------------------------------------------------------------------------
   const btns = document.createElement('div');
   btns.id = 'rollGameBtns';
-  btns.innerHTML = '<button type="button" data-act="levels">Levels</button><button type="button" data-act="book">Collection</button>';
+  btns.innerHTML = '<button type="button" data-act="levels">Levels</button><button type="button" data-act="book">Collection</button><button type="button" data-act="credits">Data</button>';
   document.body.append(btns);
+  // the map's data sources (the header's credits, which this mode hides with the header)
+  btns.querySelector('[data-act=credits]').onclick = () => {
+    const paused = window.__roll?.paused;
+    if (window.__roll) window.__roll.paused = true;
+    creditsPanel.querySelector('.sheet').innerHTML = `<h2>Data sources</h2><p class="lede"></p><div class="rollRow"><button type="button" class="primary" data-act="close">Back to the game</button></div>`;
+    const parts = [...(document.getElementById('credits')?.childNodes || [])].filter((n) => !n.classList?.contains('short')); // the long credits, not the phone ones
+    creditsPanel.querySelector('.lede').append(...parts.map((n) => n.cloneNode(true)));
+    creditsPanel.hidden = false;
+    creditsPanel.querySelector('[data-act=close]').onclick = () => { creditsPanel.hidden = true; if (window.__roll && !paused) window.__roll.paused = false; };
+  };
   btns.querySelector('[data-act=levels]').onclick = () => go(null);
   btns.querySelector('[data-act=book]').onclick = () => showBook();
   addEventListener('keydown', (e) => { if (e.code === 'KeyB' && !e.target.closest?.('input')) { bookPanel.hidden ? showBook() : bookPanel.querySelector('[data-act=close]')?.click(); } }, true);
