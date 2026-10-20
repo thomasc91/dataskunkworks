@@ -65,7 +65,10 @@
     A139: 'AW139', A169: 'AW169', B412: 'Bell 412', B429: 'Bell 429', B407: 'Bell 407', B06: 'Bell 206', AS50: 'Airbus AS350',
     R44: 'Robinson R44', R22: 'Robinson R22', S76: 'Sikorsky S-76', H160: 'Airbus H160', BK17: 'BK 117',
   };
-  const HELI_TYPES = new Set(['EC35', 'EC45', 'EC30', 'A139', 'A169', 'B412', 'B429', 'B407', 'B06', 'AS50', 'R44', 'R22', 'S76', 'H160', 'BK17']);
+  // Helicopters: ADS-B category A7 (rotorcraft), or an ICAO helicopter type, for the ones that send no category
+  const HELI_TYPES = new Set(['A109', 'A119', 'A129', 'A139', 'A149', 'A169', 'A189', 'AS32', 'AS3B', 'AS50', 'AS55', 'AS65', 'B06', 'B06T',
+    'B105', 'B212', 'B407', 'B412', 'B427', 'B429', 'B430', 'B505', 'BK17', 'EC20', 'EC25', 'EC30', 'EC35', 'EC45', 'EC55', 'EC75', 'EXPL',
+    'H160', 'H47', 'H60', 'MD52', 'MD60', 'NH90', 'R22', 'R44', 'R66', 'S61', 'S70', 'S76', 'S92', 'TIGR', 'UH1']);
   const SIZE = { A1: 0.45, A2: 0.65, A3: 1, A4: 1.1, A5: 1.3, A6: 0.8, B1: 0.4, B4: 0.4, B6: 0.4 };
   const TAILS = ['#d8342c', '#1f4e9c', '#e07b28', '#169c8c', '#7a3fa0', '#d9a91f'];
 
