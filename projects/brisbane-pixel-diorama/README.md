@@ -8,14 +8,13 @@ Built with Claude on 13 October 2026; the terrain, bridges, railway, live ferrie
 
 | File | What it is |
 | --- | --- |
-| `index.html` | The page: header, toolbar, building card and labels |
+| `index.html` | The page: toolbar, building card and labels |
 | `city.js` | The renderer, with three.js r170 bundled in |
 | `westend.json` | The model data (11.4 MB): buildings, water, parks, trees, roads, tunnels, bridges, ferries, labels and traffic routes |
 | `terrain.js`, `terrain.json`, `terrain.bin` | The ground: a 10 m height grid (3 MB) and where everything sits on it |
 | `bridges.js`, `bridges.json` | Hand-built models of 14 river bridges, and which of the map's bridges each one replaces |
 | `ferry-terminals.js`, `terminals.json` | The 17 ferry terminals on their real outlines, and the hover cards |
 | `landmarks.js`, `landmarks.json` | Hand-built landmarks, and where each one goes |
-| `ride.js` | The ride replay, from a GPX file |
 | `towers.js` | Brisbane's 21 tallest towers reshaped from photos, and the new ones the map lacked |
 | `live-config.js`, `live-ferries.js`, `live-trains.js`, `live-planes.js`, `aircraft.js` | The live ferries, trains and planes, and which relay they read |
 | `rail.json` | The railway: 115 km of track and the station platforms, and TransLink's stop ids for naming each train's next stop |
@@ -49,10 +48,6 @@ None of the feeds lets a web page read it directly, so the page reads them throu
 - **Cyclists:** riders on 190 km of bikeways, as many as the council's 12 bike counters in the map count on that day of the week (October and November 2025, the latest published), spread over the day with commuting peaks, at about 20 km/h. About 350 ride at 7:30am on a weekday. Half stay home in the rain.
 - **The sun and weather:** the Now button keeps the slider at the time in Brisbane, with the sun where it really is today. The weather is Open-Meteo's for Brisbane now: cloud dims the light, rain falls, and the toolbar shows the temperature and sky. After dark the map shows the afternoon.
 
-## Ride replay
-
-The Ride button replays a bike ride on the map from a GPX file (Strava exports one from a ride's menu): the route drawn as it's ridden, the rider, the camera following, and the speed, height, heart rate and time of day. A speed slider runs it from real time to 300 times faster. The file is read in your browser and isn't uploaded anywhere.
-
 ## Towers
 
 The tallest towers are reshaped from photos and published heights: setbacks, tapers, sloping tops, crowns, masts and spires, each with the glass it really has. The map also had none of the towers finished since 2019, so Queen's Wharf with its Sky Deck, 443 Queen Street and 205 North Quay are added. Heights are above the ground, so the Skytower is 269.6 m rather than the 274.3 m often quoted, which is above sea level.
@@ -79,7 +74,7 @@ Then open http://localhost:8000/. The fonts come from Google Fonts; offline, it 
 
 ## Data
 
-On the map these credits sit behind the Data sources button in the title card, and the Data button in roll mode.
+On the map these credits sit behind the info button in the toolbar, and the Data button in roll mode.
 
 - Buildings, streets, parks, the railway, bus routes, bikeways, bridge outlines, ferry terminals and the landmarks' places © OpenStreetMap contributors (ODbL) and the Overture Maps Foundation.
 - Elevation: Queensland DEM (QldDem), CC BY-SA. Includes material © State of Queensland (Department of Natural Resources and Mines, Manufacturing, and Regional and Rural Development); © Commonwealth of Australia (Geoscience Australia, The Australian Hydrographic Office); © www.deepreef.org 2025. The height grid in `terrain.bin` is shared under the same licence.

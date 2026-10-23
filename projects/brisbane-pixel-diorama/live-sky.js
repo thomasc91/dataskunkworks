@@ -8,6 +8,10 @@
 //   10 minutes. Cloud dims the sun and softens the shadows and rain falls as streaks. The toolbar always shows the
 //   temperature and sky.
 //
+// - The Weather button (22 Oct 2026, his ask) switches the live weather off and on: off, the sky stays clear, no rain
+//   falls, the temperature hides and Open-Meteo isn't asked. The choice is remembered in this browser; ?weather=off
+//   starts with it off.
+//
 // (A night mode, with lit windows, street lights and headlights, was tried on 19 Oct 2026 and taken out: Thomas
 // preferred the daylight look.) ?sky=off keeps the original slider.
 (() => {
@@ -78,11 +82,15 @@
 
     // --- The weather ----------------------------------------------------------------------------------------------
     let weather = null;
+    const KEY = 'diorama.weather';
+    const stored = (() => { try { return localStorage.getItem(KEY); } catch { return null; } })();
+    let weatherOn = Q.get('weather') !== 'off' && stored !== 'off';
     const out = document.createElement('output');
     out.id = 'weather';
     Object.assign(out.style, { font: "600 12.5px 'Hanken Grotesk', system-ui, sans-serif", color: 'var(--muted)', whiteSpace: 'nowrap' });
     const footer = document.querySelector('footer'), credit = document.createElement('span');
     async function fetchWeather() {
+      if (!weatherOn) return;
       try {
         const r = await fetch(WEATHER, { cache: 'no-store' });
         if (!r.ok) throw new Error(r.status);
@@ -102,7 +110,18 @@
     nowBtn.title = 'Follow the sun and weather in Brisbane now (after dark, the afternoon)';
     const label = slider.closest('label');
     label?.after(nowBtn);
-    nowBtn.after(out);
+    const weatherBtn = document.createElement('button');
+    weatherBtn.type = 'button'; weatherBtn.id = 'weatherBtn'; weatherBtn.textContent = 'Weather';
+    weatherBtn.title = 'Live weather on or off: cloud and rain in Brisbane now, from Open-Meteo';
+    weatherBtn.setAttribute('aria-pressed', String(weatherOn));
+    weatherBtn.addEventListener('click', () => {
+      weatherOn = !weatherOn;
+      weatherBtn.setAttribute('aria-pressed', String(weatherOn));
+      try { localStorage.setItem(KEY, weatherOn ? 'on' : 'off'); } catch {}
+      if (weatherOn) fetchWeather(); else apply();
+    });
+    nowBtn.after(weatherBtn);
+    weatherBtn.after(out);
     let now = Q.get('time') == null, ticking = false, dark = false;
     if (!now) slider.value = String(clamp(+Q.get('time') || 0, LO, HI)); // ?time=480 for 8am, for testing
     nowBtn.setAttribute('aria-pressed', String(now));
@@ -127,7 +146,7 @@
 
     function apply() {
       const s = sunAt(+slider.value), v = city.view, st = city.style;
-      const w = now && !dark ? weather : null, cc = w ? clamp(w.cloud / 100, 0, 1) : 0, wet = w && w.precip > 0.05;
+      const w = now && !dark && weatherOn ? weather : null, cc = w ? clamp(w.cloud / 100, 0, 1) : 0, wet = w && w.precip > 0.05;
       Object.assign(v, { sunAz: s.az, sunEl: clamp(s.el, 4, 85) });
       const k = clamp((30 - v.sunEl) / 24, 0, 1); // golden hour, as the renderer tints it
       city.sun.color.lerpColors(TINT.day, TINT.gold, k);
@@ -138,7 +157,7 @@
       city.setBackground(cc > 0 ? '#' + C(css).lerp(TINT.grey, 0.35 * cc).getHexString() : css);
       rainRate = wet ? Math.min(RAIN, 350 + w.precip * 700) : 0;
       out.textContent = weather ? `${Math.round(weather.temp)}° · ${SKY[weather.code] ?? ''}` : '';
-      out.hidden = !weather;
+      out.hidden = !(weather && weatherOn);
       city.invalidate();
       city.updateCamera();
       D.requestRender?.();
@@ -149,7 +168,7 @@
 
     setInterval(tick, TICK_MS);
     setInterval(fetchWeather, WEATHER_MS);
-    window.__liveSky = { sunAt, apply, get weather() { return weather; }, get now() { return now; }, setNow, rain };
+    window.__liveSky = { sunAt, apply, get weather() { return weather; }, get now() { return now; }, get weatherOn() { return weatherOn; }, setNow, rain };
     if (now) tick(); else { slider.dispatchEvent(new Event('input')); apply(); }
     fetchWeather();
   }

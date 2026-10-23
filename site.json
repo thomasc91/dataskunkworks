@@ -61,8 +61,7 @@
           "p": [
             "Drag to orbit, scroll to zoom, and hover or click a building to see its height and floors. The sun slider moves the shadows from 6am to 5:15pm, and the photo view frames Eagle Street.",
             "The CityCats, ferries, trains, buses and Metro sit at their real GPS positions, and the planes are the real flights passing over Brisbane, so hover any of them to see where it's headed. Each aircraft is drawn as its own type, from Cessnas and rescue helicopters to Dash 8s and A350s. The cars are simulated, but how many are out follows the council's live traffic signal data, and the cyclists ride the bikeways in the numbers its bike counters record.",
-                       "The Ride button replays a bike ride from a GPX file on the map, with the rider, their speed and heart rate, and the sun where it was at that time of day.",
-        "The Roll button turns the map into a Katamari-style game, where a sticky ball rolls up everything smaller than itself, from cane toads, ibis and kangaroos to CityCats and the Brisbane Skytower, with five levels, a collection book and a best-times board.",
+            "The Roll button turns the map into a Katamari-style game, where a sticky ball rolls up everything smaller than itself, from cane toads, ibis and kangaroos to CityCats and the Brisbane Skytower, with five levels, a collection book and a best-times board.",
             "In daylight the sun and the weather follow the real time in Brisbane, so the shadows and the clouds are today's.",
             "Buildings and hills are drawn 1.6 times taller than they really are, so the skyline still reads from a distance."
           ]

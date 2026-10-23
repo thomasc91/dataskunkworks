@@ -132,6 +132,7 @@
   const say = (t, big) => R?.say(t, big, true);
   const sound = (name, arg) => window.__rollSound?.play(name, arg);
   window.__rollGame = {
+    addBook(title, items) { BOOK.push([title, items]); for (const [k] of items) KNOWN.add(k); },
     goalText: () => {
       if (!level || !R) return null;
       const g = level.goal;
@@ -192,7 +193,8 @@
 
   // --- Combos, the wanted bus, the book, and the goals: all from the engine's events ------------------------------------
   const COMBOS = { 'animal:ibis': 'Bin chicken combo', person: 'Crowd surfer', car: 'Traffic jam', tree: 'Clear-felled', 'animal:toad': 'Toad sweep',
-    building: 'Demolition crew', prop: 'Street sweeper', 'animal:roo': 'Mob rule', 'animal:magpie': 'Magpie muster', bus: 'Bus jam', landmark: 'Sightseer' };
+    building: 'Demolition crew', prop: 'Street sweeper', 'animal:roo': 'Mob rule', 'animal:magpie': 'Magpie muster', bus: 'Bus jam', landmark: 'Sightseer',
+    takeout: 'Food coma' };
   let streak = { fam: null, n: 0, at: -9 }, wanted = null, wantedAt = -60, rainSaid = false;
   function onPick(e) {
     const now = R.clock;
@@ -204,7 +206,7 @@
       if (!was && KNOWN.has(key)) { say(`New in your collection: ${BOOK.flatMap(([, i]) => i).find(([k]) => k === key)[1]}`); sound('book'); }
       if (now - (onPick.saved || 0) > 3) { store.set('roll-book', book); onPick.saved = now; }
       // combos: five of a kind (any street furniture counts together) within six seconds of each other
-      const fam = e.key.startsWith('prop:') ? 'prop' : e.key.startsWith('landmark:') ? 'landmark' : e.key;
+      const fam = e.key.startsWith('prop:') ? 'prop' : e.key.startsWith('landmark:') ? 'landmark' : e.key.startsWith('takeout:') ? 'takeout' : e.key;
       if (streak.fam === fam && now - streak.at < 6) streak.n++; else streak = { fam, n: 1, at: now };
       streak.at = now;
       if (COMBOS[fam] && (streak.n === 5 || streak.n === 10 || streak.n === 20 || (streak.n > 20 && streak.n % 20 === 0))) {

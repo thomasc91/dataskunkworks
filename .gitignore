@@ -1,2 +1,5 @@
 # personal location data (the diorama ride replay reads it on the PC only)
 projects/brisbane-pixel-diorama/ride.json
+# his spending (the Takeout and Dining views read it on the PC only)
+projects/brisbane-pixel-diorama/ubereats.json
+projects/brisbane-pixel-diorama/dining.json

@@ -199,7 +199,8 @@
     const lmByBid = new Map(), lmSeen = new Set();
     let lmNext = 0;
     function addLandmarks() {
-      const items = [...(window.__landmarks?.items || []), ...(window.__towers?.items || [])];
+      const items = [...(window.__landmarks?.items || []), ...(window.__towers?.items || []), ...(window.__takeout?.items || []),
+        ...(window.__diningStacks?.items || [])];
       if (items.length === lmSeen.size) return;
       items.forEach((it) => {
         if (lmSeen.has(it)) return;
@@ -427,6 +428,10 @@
     function cutaway(mat) {
       if (!mat || mat.userData.cutaway) return;
       mat.userData.cutaway = true;
+      // three.js shares a compiled program between materials whose hooks read the same, so every cutaway material would
+      // get the first one's shader (the takeout pillars drew with the buildings'): key it on the hook it wraps as well
+      const key = 'cutaway|' + mat.customProgramCacheKey();
+      mat.customProgramCacheKey = () => key;
       const prev = mat.onBeforeCompile;
       mat.onBeforeCompile = (sh, rr) => {
         prev?.call(mat, sh, rr);
@@ -566,6 +571,26 @@
       if (list.length > CAP[kind]) list.shift(); // the oldest are deep inside by now
     }
 
+    // Whole meshes riding on the ball (roll-takeout.js's spend pillars, dishes and badges): put on where they touched,
+    // `depth` of the ball's radius in plus `out` metres (or out(r), for things sized to the ball), and turned with the
+    // ball (face 'ball', the mesh's y along the radius) or kept facing the camera (face 'camera'). Unlike the stuck
+    // boxes, they're never dropped for newer ones or buried as the ball grows: they ride on its surface.
+    const attached = [];
+    function attach(obj, wx, wy, wz, { face = 'ball', depth = 0.78, out = 0 } = {}) {
+      let dx = wx - px, dy = wy - py, dz = wz - pz;
+      const l = Math.hypot(dx, dy, dz) || 1;
+      dx /= l; dy /= l; dz /= l;
+      const u = mulT([dx, dy, dz]);
+      let t = Math.abs(u[1]) < 0.9 ? [u[2], 0, -u[0]] : [1, 0, 0];
+      const tl = Math.hypot(...t);
+      t = t.map((c) => c / tl);
+      const s = [t[1] * u[2] - t[2] * u[1], t[2] * u[0] - t[0] * u[2], t[0] * u[1] - t[1] * u[0]];
+      obj.matrixAutoUpdate = face === 'camera';
+      const rec = { obj, u, t, s, depth, out, face, sc: [obj.scale.x, obj.scale.y, obj.scale.z] };
+      attached.push(rec);
+      return rec;
+    }
+
     let prioAt = -9;
     function say(text, big, prio = false) { // prio: the game's own news (combos, bonuses, the collection) outranks pick-ups for a moment
       if (prio) prioAt = clock;
@@ -596,7 +621,8 @@
       const takeLandmark = (it, p) => {
         if (it.gone) return;
         it.hide();
-        stick('box', p.cx, ground(p.cx, p.cz) + it.H / 2, p.cz, [Math.max(2, p.w * 0.9), Math.max(2, it.H), Math.max(2, p.d * 0.9)], it.colour || [1, 1, 1], it.vol, it.label, it.key);
+        if (it.onTake) it.onTake({ x: p.cx, y: ground(p.cx, p.cz), z: p.cz });
+        else stick('box', p.cx, ground(p.cx, p.cz) + it.H / 2, p.cz, [Math.max(2, p.w * 0.9), Math.max(2, it.H), Math.max(2, p.d * 0.9)], it.colour || [1, 1, 1], it.vol, it.label, it.key);
         grow(it.vol);
         note(it.label, (p.extra ? p.size : it.H) + 30, it.key, { landmark: it.name });
         stats.names.push(it.name); stats.building++;
@@ -744,8 +770,9 @@
         const [qx, qz, inside] = closest(p, px, pz), d = Math.hypot(px - qx, pz - qz);
         if (!inside && d > r * 0.92) return;
         if (p.size <= cap) {
-          // at most 30 buildings a frame, so a big ball in the CBD grows smoothly rather than all at once
-          if (++buildingPicks > 30) return;
+          // at most 30 buildings a frame, so a big ball in the CBD grows smoothly rather than all at once (landmarks, tower
+          // tops and takeout pillars don't wait: there are few of them, and a big ball mustn't skip them)
+          if (!p.extra && ++buildingPicks > 30) return;
           if (p.extra) { p.gone = true; takeLandmark(p.extra, p); return; }
           const all = byBid.get(p.bid);
           let vol = 0, H = 0;
@@ -1057,6 +1084,17 @@
         mesh.count = list.length;
         mesh.instanceMatrix.needsUpdate = mesh.instanceColor.needsUpdate = true;
       }
+      for (const a of attached) {
+        const rr = r * a.depth + (typeof a.out === 'function' ? a.out(r) : a.out), p = mul(a.u).map((c) => c * rr);
+        if (a.face === 'camera') {
+          a.obj.position.set(px + p[0], py + p[1], pz + p[2]);
+          a.obj.quaternion.copy(city.camera.quaternion);
+        } else {
+          const t = mul(a.t), u = mul(a.u), s = mul(a.s), [sx, sy, sz] = a.sc;
+          a.obj.matrix.set(t[0] * sx, u[0] * sy, s[0] * sz, px + p[0], t[1] * sx, u[1] * sy, s[1] * sz, py + p[1], t[2] * sx, u[2] * sy, s[2] * sz, pz + p[2], 0, 0, 0, 1);
+          a.obj.matrixWorldNeedsUpdate = true;
+        }
+      }
       for (const m of treesDirty) m.instanceMatrix.needsUpdate = true;
       if (buildingsDirty) goneTex.needsUpdate = true;
       if (treesDirty.size || buildingsDirty) city.invalidate();
@@ -1096,7 +1134,7 @@
     window.__roll = { get r() { return r; }, get pos() { return [px, py, pz]; }, set pos([x, z]) { px = x; pz = z; }, stats, keys, fauna,
       on, say, markers, toXZ, get clock() { return clock; }, get things() { return things; }, get paused() { return paused; }, set paused(v) { paused = v; },
       bonus: (vol) => grow(vol), get volume() { return r ** 3 / 0.239; }, level: LEVEL, loose, crash: (speed = 15) => crash(speed, 0, 1),
-      grow: (m) => { r = m; }, get az() { return az; }, set az(a) { az = a; } };
+      grow: (m) => { r = m; }, get az() { return az; }, set az(a) { az = a; }, attach, cutaway, layer };
     hud.querySelector('.meta').textContent = '0 things rolled up · 0:00';
     city.view.span = 32;
   }
