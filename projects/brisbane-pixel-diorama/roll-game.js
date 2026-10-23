@@ -276,7 +276,7 @@
   };
   btns.querySelector('[data-act=levels]').onclick = () => go(null);
   btns.querySelector('[data-act=book]').onclick = () => showBook();
-  addEventListener('keydown', (e) => { if (e.code === 'KeyB' && !e.target.closest?.('input')) { bookPanel.hidden ? showBook() : bookPanel.querySelector('[data-act=close]')?.click(); } }, true);
+  addEventListener('keydown', (e) => { if ((window.__rollKeyCode?.(e) || e.code) === 'KeyB' && !e.target.closest?.('input')) { bookPanel.hidden ? showBook() : bookPanel.querySelector('[data-act=close]')?.click(); } }, true);
 
   const wait = setInterval(() => {
     if (!window.__roll) return;

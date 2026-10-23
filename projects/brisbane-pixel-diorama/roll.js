@@ -885,14 +885,20 @@
     const KEYMAP = { ArrowUp: 'f', KeyW: 'f', ArrowDown: 'b', KeyS: 'b', ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r',
       KeyQ: 'ol', KeyE: 'or', KeyR: 'tu', KeyF: 'td', Equal: 'zi', NumpadAdd: 'zi', Minus: 'zo', NumpadSubtract: 'zo' };
     let zoom = 1, tilt = 0; // the player's own camera: zoom (x the automatic span) and tilt (degrees on the automatic angle)
+    // Which key: its code, or, where a host leaves that blank (OBS's Interact window sends keys without one), its name
+    // or old key number
+    const NUMS = { 38: 'ArrowUp', 40: 'ArrowDown', 37: 'ArrowLeft', 39: 'ArrowRight', 27: 'Escape', 187: 'Equal', 189: 'Minus', 107: 'NumpadAdd', 109: 'NumpadSubtract' };
+    const codeOf = (e) => e.code || (/^Arrow|^Escape$/.test(e.key) ? e.key : /^[a-z]$/i.test(e.key) ? 'Key' + e.key.toUpperCase()
+      : e.key === '=' || e.key === '+' ? 'Equal' : e.key === '-' ? 'Minus' : '') || NUMS[e.keyCode] || (e.keyCode >= 65 && e.keyCode <= 90 ? 'Key' + String.fromCharCode(e.keyCode) : '');
+    window.__rollKeyCode = codeOf;
     addEventListener('keydown', (e) => {
       if (e.target.closest?.('input, textarea')) return; // typing initials, not rolling
-      if (e.code === 'Escape') return go(false);
-      const k = KEYMAP[e.code];
+      if (codeOf(e) === 'Escape') return go(false);
+      const k = KEYMAP[codeOf(e)];
       if (!k) return;
       keys.add(k); e.preventDefault(); e.stopImmediatePropagation();
     }, true);
-    addEventListener('keyup', (e) => { const k = KEYMAP[e.code]; if (k) { keys.delete(k); e.preventDefault(); } }, true);
+    addEventListener('keyup', (e) => { const k = KEYMAP[codeOf(e)]; if (k) { keys.delete(k); e.preventDefault(); } }, true);
     addEventListener('blur', () => keys.clear());
     let drag = null, look = null, pinch = null;
     const pointers = new Map(), spread = () => { const [a, b] = [...pointers.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
